@@ -33,6 +33,9 @@ export function AppRuta() {
   const [origen, setOrigen] = useState<string | null>(null);
   const [actual, setActual] = useState("");
   const [errorOrigen, setErrorOrigen] = useState<string | null>(null);
+  /** producto de la 2ª búsqueda (o posteriores) a la espera de saber en qué pasillo está el cliente */
+  const [pendiente, setPendiente] = useState<ProductoPublico | null>(null);
+  const yaHuboRuta = useRef(false);
 
   /** dibuja la ruta a un pasillo del plano; si el pasillo no está en el plano, solo avisa */
   const mostrarPasillo = useCallback((idPlano: string | null, pasillo: string, origen: string | null) => {
@@ -46,6 +49,7 @@ export function AppRuta() {
       const r = calcularRuta(idPlano, origen ? { desde: origen } : {});
       setAviso(null);
       setRuta(r);
+      yaHuboRuta.current = true;
       setVersion((v) => v + 1);
       setPaso({ i: 0, n: r.tramos.length });
     } catch {
@@ -54,22 +58,28 @@ export function AppRuta() {
     }
   }, []);
 
-  /** el cliente dice en qué pasillo está: la próxima ruta sale de ahí y no de la entrada */
+  const cerrarPregunta = () => {
+    setPendiente(null);
+    setActual("");
+    setErrorOrigen(null);
+  };
+  /** el cliente dice en qué pasillo está: la ruta al producto pendiente sale de ahí */
   const fijarOrigen = (e: FormEvent) => {
     e.preventDefault();
     const id = actual.trim().toLowerCase();
-    if (!id) return;
+    if (!id || !pendiente) return;
     if (!PLANO.has(id)) {
       setErrorOrigen(`No encuentro el pasillo «${actual.trim()}» en el plano. Prueba con uno como 13A.`);
       return;
     }
-    setErrorOrigen(null);
     setOrigen(id);
-    setActual("");
+    mostrarPasillo(pendiente.idPlano, pendiente.pasillo, id);
+    cerrarPregunta();
   };
-  const volverEntrada = () => {
-    setOrigen(null);
-    setErrorOrigen(null);
+  /** el cliente sigue en la entrada (o no sabe su pasillo): la ruta sale de la entrada */
+  const desdeEntrada = () => {
+    if (pendiente) mostrarPasillo(pendiente.idPlano, pendiente.pasillo, null);
+    cerrarPregunta();
   };
 
   const buscar = useCallback(
@@ -82,6 +92,8 @@ export function AppRuta() {
       setRuta(null);
       setPaso({ i: -1, n: 0 });
       setAviso(null);
+      setOrigen(null);
+      setPendiente(null);
       if (!texto.trim()) {
         setRespuesta(null);
         return;
@@ -92,15 +104,18 @@ export function AppRuta() {
         const datos = (await res.json()) as RespuestaBuscar;
         setRespuesta(datos);
         setFoco({ resultado: 0, alternativa: null });
-        if (datos.resultados.length > 0) mostrarPasillo(datos.resultados[0].idPlano, datos.resultados[0].pasillo, origen);
-        else setAviso(datos.mensaje);
+        const primero = datos.resultados[0];
+        if (!primero) setAviso(datos.mensaje);
+        else if (yaHuboRuta.current && primero.idPlano)
+          setPendiente(primero); // 2ª búsqueda en adelante: se pregunta dónde está
+        else mostrarPasillo(primero.idPlano, primero.pasillo, null);
       } catch (e) {
         if ((e as Error).name !== "AbortError") setAviso("No pude buscar ahora. Revisa tu conexión e intenta de nuevo.");
       } finally {
         if (peticion.current === control) setCargando(false);
       }
     },
-    [mostrarPasillo, origen],
+    [mostrarPasillo],
   );
 
   const enviar = (e: FormEvent) => {
@@ -219,32 +234,6 @@ export function AppRuta() {
             {aviso}
           </div>
         )}
-        {(ruta || origen) && (
-          <form className={estilos.origen} onSubmit={fijarOrigen}>
-            <label htmlFor="pasillo-actual">
-              {origen ? `Saliendo desde el pasillo ${origen.toUpperCase()}. ¿Te moviste?` : "¿En qué pasillo estás ahora?"}
-            </label>
-            <div className={estilos.origenFila}>
-              <input
-                id="pasillo-actual"
-                value={actual}
-                onChange={(e) => setActual(e.target.value)}
-                autoComplete="off"
-                autoCapitalize="characters"
-                placeholder="Ej.: 13A"
-                maxLength={6}
-              />
-              <button type="submit">Usar</button>
-              {origen && (
-                <button type="button" onClick={volverEntrada}>
-                  Entrada
-                </button>
-              )}
-            </div>
-            <small>La próxima búsqueda saldrá desde ese pasillo.</small>
-            {errorOrigen && <span role="alert">{errorOrigen}</span>}
-          </form>
-        )}
         {MOSTRAR_INDICACIONES && ruta && paso.i >= 0 && (
           <div className={estilos.paso} aria-live="polite">
             <span>{etiquetaPaso}</span>
@@ -273,6 +262,33 @@ export function AppRuta() {
           ))}
         </div>
       </footer>
+      {pendiente && (
+        <div className={estilos.fondo}>
+          <form className={estilos.dialogo} role="dialog" aria-modal="true" aria-labelledby="titulo-origen" onSubmit={fijarOrigen}>
+            <h2 id="titulo-origen">¿Dónde estás?</h2>
+            <p>
+              Dime en qué pasillo estás ahora y te llevo desde ahí hasta <b>{pendiente.descripcion}</b> (pasillo {pendiente.pasillo}).
+            </p>
+            <input
+              value={actual}
+              onChange={(e) => setActual(e.target.value)}
+              autoFocus
+              autoComplete="off"
+              autoCapitalize="characters"
+              placeholder="Ej.: 13A"
+              aria-label="Pasillo donde estás"
+              maxLength={6}
+            />
+            {errorOrigen && <span role="alert">{errorOrigen}</span>}
+            <button type="submit" className={estilos.principal}>
+              Calcular ruta desde aquí
+            </button>
+            <button type="button" onClick={desdeEntrada}>
+              Estoy en la entrada
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

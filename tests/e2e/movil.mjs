@@ -23,7 +23,17 @@ const VISTAS = [
   [414, 896],
 ];
 
-const proc = spawn(CHROME, ["--headless=new", "--disable-gpu", "--remote-debugging-port=9444", `--user-data-dir=${path.resolve("out-e2e", "perfil")}`, "about:blank"], { stdio: "ignore" });
+const proc = spawn(
+  CHROME,
+  [
+    "--headless=new",
+    "--disable-gpu",
+    "--remote-debugging-port=9444",
+    `--user-data-dir=${path.resolve("out-e2e", "perfil")}`,
+    "about:blank",
+  ],
+  { stdio: "ignore" },
+);
 await dormir(2500);
 const lista = await (await fetch("http://127.0.0.1:9444/json/list")).json();
 const ws = new WebSocket(lista.find((t) => t.type === "page").webSocketDebuggerUrl);
@@ -36,8 +46,10 @@ ws.onmessage = (m) => {
   if (d.id && pend.has(d.id)) {
     pend.get(d.id)(d);
     pend.delete(d.id);
-  } else if (d.method === "Runtime.exceptionThrown") errores.push(d.params.exceptionDetails.text + " " + (d.params.exceptionDetails.exception?.description ?? ""));
-  else if (d.method === "Runtime.consoleAPICalled" && d.params.type === "error") errores.push("console.error: " + d.params.args.map((a) => a.value ?? a.description).join(" "));
+  } else if (d.method === "Runtime.exceptionThrown")
+    errores.push(d.params.exceptionDetails.text + " " + (d.params.exceptionDetails.exception?.description ?? ""));
+  else if (d.method === "Runtime.consoleAPICalled" && d.params.type === "error")
+    errores.push("console.error: " + d.params.args.map((a) => a.value ?? a.description).join(" "));
 };
 const enviar = (method, params = {}) =>
   new Promise((r) => {
@@ -45,7 +57,8 @@ const enviar = (method, params = {}) =>
     pend.set(i, r);
     ws.send(JSON.stringify({ id: i, method, params }));
   });
-const evaluar = async (expr) => (await enviar("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true })).result.result?.value;
+const evaluar = async (expr) =>
+  (await enviar("Runtime.evaluate", { expression: expr, awaitPromise: true, returnByValue: true })).result.result?.value;
 const foto = async (nombre) => {
   const r = await enviar("Page.captureScreenshot", { format: "png" });
   writeFileSync(path.join(SAL, nombre), Buffer.from(r.result.data, "base64"));
@@ -54,7 +67,9 @@ await enviar("Page.enable");
 await enviar("Runtime.enable");
 
 async function buscar(texto) {
-  await evaluar(`(()=>{const i=document.querySelector('input[type=search]');const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(i,${JSON.stringify(texto)});i.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('form button[type=submit]').click()})()`);
+  await evaluar(
+    `(()=>{const i=document.querySelector('input[type=search]');const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(i,${JSON.stringify(texto)});i.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('form button[type=submit]').click()})()`,
+  );
 }
 
 for (const [w, h] of VISTAS) {
@@ -78,7 +93,9 @@ for (const [w, h] of VISTAS) {
     await buscar(consulta);
     await dormir(5200);
     await foto(`${w}x${h}_${nombre}.png`);
-    const estado = await evaluar(`JSON.stringify({paso:document.querySelector('[aria-live=polite]')?.textContent??null,aviso:document.querySelector('[role=status]')?.textContent??null,botones:[...document.querySelectorAll('button')].filter(b=>b.offsetParent).map(b=>Math.round(b.getBoundingClientRect().height)).filter(x=>x<44).length,scrollX:document.documentElement.scrollWidth>window.innerWidth})`);
+    const estado = await evaluar(
+      `JSON.stringify({paso:document.querySelector('[aria-live=polite]')?.textContent??null,aviso:document.querySelector('[role=status]')?.textContent??null,botones:[...document.querySelectorAll('button')].filter(b=>b.offsetParent).map(b=>Math.round(b.getBoundingClientRect().height)).filter(x=>x<44).length,scrollX:document.documentElement.scrollWidth>window.innerWidth})`,
+    );
     console.log(`${w}x${h} ${nombre} (${desc}):`, estado);
   }
 }

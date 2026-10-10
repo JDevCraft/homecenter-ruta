@@ -284,53 +284,59 @@
   }
 }
 
-.origen {
-  margin-bottom: 8px;
-  display: grid;
-  gap: 4px;
-}
-.origen label {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--azul);
-}
-.origen small {
-  font-size: 12px;
-  color: #5b6477;
-}
-.origen [role="alert"] {
-  font-size: 13px;
-  color: #b3261e;
-}
-.origenFila {
+.fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
   display: flex;
-  gap: 8px;
-  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(4, 30, 126, 0.55);
 }
-.origenFila input {
-  flex: 1 1 0;
-  width: 0;
-  min-width: 0;
-  min-height: 44px;
-  padding: 0 12px;
-  font-size: 16px;
+.dialogo {
+  width: 100%;
+  max-width: 380px;
+  display: grid;
+  gap: 10px;
+  padding: 20px 18px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 40px rgba(4, 30, 126, 0.35);
+}
+.dialogo h2 {
+  margin: 0;
+  font-size: 22px;
+  color: var(--navy);
+}
+.dialogo p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--texto);
+}
+.dialogo input {
+  min-height: 48px;
+  padding: 0 14px;
+  font-size: 18px;
   text-transform: uppercase;
   border: 2px solid var(--linea);
   border-radius: 12px;
 }
-.origenFila button {
-  min-height: 44px;
-  flex: none;
-  padding: 0 14px;
-  font-size: 15px;
-  font-weight: 700;
-  border: 0;
-  border-radius: 12px;
-  background: var(--azul);
-  color: #fff;
+.dialogo [role="alert"] {
+  font-size: 13px;
+  color: #b3261e;
 }
-.origenFila button[type="button"] {
+.dialogo button {
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 2px solid var(--azul);
   background: #fff;
   color: var(--azul);
-  border: 2px solid var(--azul);
+}
+.dialogo button.principal {
+  background: var(--azul);
+  color: #fff;
 }

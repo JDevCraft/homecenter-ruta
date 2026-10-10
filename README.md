@@ -41,13 +41,13 @@ TIPO REPOSICION y UBICACION no salen de `pipeline/`; hay pruebas que lo verifica
 
 Después de editarlo, corre `npm run datos`.
 
-| id | acción | efecto |
-|---|---|---|
-| `cubos-entrada` | `agregar_obstaculo` | Agrega un obstáculo (bbox) que el PDF no trae: los 2 cubos junto a la entrada. Las rutas lo rodean. |
-| `modulos_columna_derecha` | `cierre_modulos` (`cierre: 0`) | En esa región los módulos de la columna derecha (frente a 29a–39a) se tratan como independientes: no se cierran los huecos de 10 pt entre ellos, así que se puede cruzar. |
-| `modulos_fila_zona_c` | `cierre_modulos` (`cierre: 0`) | Igual, para la fila de 21 módulos sobre las góndolas 10c–21c. |
-| `cruces_columna_derecha` | informativo | Lista los 3 cruces por validar (y≈557, 632, 707). No cambia rutas. |
-| `inicio_pasillo_central` | `ruta_via` | Los destinos 09c–21c pasan obligatoriamente por (506,8; 1131,7), el inicio del pasillo central de la zona c. Cambiar `pos` mueve ese punto; `destinos` define a quién aplica. |
+| id                        | acción                         | efecto                                                                                                                                                                        |
+| ------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cubos-entrada`           | `agregar_obstaculo`            | Agrega un obstáculo (bbox) que el PDF no trae: los 2 cubos junto a la entrada. Las rutas lo rodean.                                                                           |
+| `modulos_columna_derecha` | `cierre_modulos` (`cierre: 0`) | En esa región los módulos de la columna derecha (frente a 29a–39a) se tratan como independientes: no se cierran los huecos de 10 pt entre ellos, así que se puede cruzar.     |
+| `modulos_fila_zona_c`     | `cierre_modulos` (`cierre: 0`) | Igual, para la fila de 21 módulos sobre las góndolas 10c–21c.                                                                                                                 |
+| `cruces_columna_derecha`  | informativo                    | Lista los 3 cruces por validar (y≈557, 632, 707). No cambia rutas.                                                                                                            |
+| `inicio_pasillo_central`  | `ruta_via`                     | Los destinos 09c–21c pasan obligatoriamente por (506,8; 1131,7), el inicio del pasillo central de la zona c. Cambiar `pos` mueve ese punto; `destinos` define a quién aplica. |
 
 Parámetros fijos aprobados (en `pipeline/ruta.py` y `lib/ruta/`): margen del carrito 5 pt, celda 5 pt, cierre de módulos 10 pt.
 Si se cambian, hay que regenerar datos y revisar la paridad.
@@ -66,14 +66,14 @@ Si se cambian, hay que regenerar datos y revisar la paridad.
 
 - La **cara de la góndola** se elige por cercanía a la entrada porque el catálogo no la trae; si esa cara no tiene punto de acercamiento se usa la contraria y se marca «Lado contrario».
 - **No hay metros, distancias ni tiempos** en ninguna parte de la interfaz.
-- La primera ruta sale de la entrada. Después de ella la app pregunta «¿En qué pasillo estás ahora?»: el cliente escribe su pasillo (ej. 13A) y las siguientes búsquedas salen de ahí (`calcularRuta(destino, { desde })`). El botón «Entrada» vuelve al origen normal. Prueba: `node tests/e2e/origen.mjs`.
+- La primera búsqueda siempre sale de la entrada. Desde la segunda búsqueda aparece una ventana «¿Dónde estás?»: el cliente escribe su pasillo (ej. 13A) y la ruta al nuevo producto sale de ahí (`calcularRuta(destino, { desde })`); «Estoy en la entrada» usa la entrada. Prueba: `node tests/e2e/origen.mjs`.
 
 ## Desplegar en Vercel (preview)
 
 1. Repositorio **privado** en GitHub (lo crea y conecta Juan).
-2. En Vercel: *Add New → Project →* importar el repo. Framework: Next.js (detección automática; sin ajustes).
+2. En Vercel: _Add New → Project →_ importar el repo. Framework: Next.js (detección automática; sin ajustes).
 3. **Sin variables de entorno.** No hay secretos; si algún día aparece una, documentarla aquí y nunca subirla.
-4. *Settings → Deployment Protection*: dejar activa la protección (Vercel Authentication) para que los previews no sean públicos.
+4. _Settings → Deployment Protection_: dejar activa la protección (Vercel Authentication) para que los previews no sean públicos.
 5. Cada rama/PR genera un preview. No se asigna dominio ni se despliega a producción hasta que Juan lo decida.
 
 ## Estructura
