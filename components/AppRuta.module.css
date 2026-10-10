@@ -340,3 +340,8 @@
   background: var(--azul);
   color: #fff;
 }
+.dialogo small {
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--suave);
+}

@@ -279,6 +279,7 @@ export function AppRuta() {
               aria-label="Pasillo donde estás"
               maxLength={6}
             />
+            <small>¿No sabes en qué pasillo estás? Mira el letrero en la parte de arriba, al inicio o al final del pasillo.</small>
             {errorOrigen && <span role="alert">{errorOrigen}</span>}
             <button type="submit" className={estilos.principal}>
               Calcular ruta desde aquí
