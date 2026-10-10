@@ -430,3 +430,46 @@
     transform: none;
   }
 }
+
+/* Tipografía y estados (taste-skill): números tabulares, títulos equilibrados, esqueleto de carga y estado vacío */
+.arriba h1,
+.dialogo h2 {
+  text-wrap: balance;
+  letter-spacing: -0.01em;
+}
+.dialogo p,
+.dialogo small,
+.aviso,
+.vacio {
+  text-wrap: pretty;
+}
+.producto small,
+.paso span,
+.pasillo {
+  font-variant-numeric: tabular-nums;
+}
+.vacio {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--suave);
+  border-radius: 12px;
+  background: var(--zona);
+}
+.esqueleto {
+  min-height: 96px;
+  border-style: dashed;
+  background: linear-gradient(90deg, var(--zona), #fff, var(--zona)) 0 0 / 200% 100%;
+  animation: esqueleto 1.2s linear infinite;
+}
+@keyframes esqueleto {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto {
+    animation: none;
+  }
+}

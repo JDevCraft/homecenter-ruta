@@ -140,7 +140,7 @@ export function AppRuta() {
   const etiquetaPaso = paso.i < 0 ? "" : paso.i === n - 1 ? `Llegaste · paso ${n} de ${n}` : `Paso ${paso.i + 1} de ${n}`;
 
   return (
-    <div className={estilos.app}>
+    <main className={estilos.app}>
       <header className={estilos.arriba}>
         <h1>Homecenter Calle 80 · ¿Qué producto buscas?</h1>
         <form className={estilos.caja} onSubmit={enviar}>
@@ -157,7 +157,7 @@ export function AppRuta() {
             maxLength={80}
           />
           <button type="submit" disabled={cargando}>
-            {cargando ? "…" : "Buscar"}
+            {cargando ? "Buscando" : "Buscar"}
           </button>
         </form>
         <div className={estilos.ejemplos}>
@@ -170,7 +170,13 @@ export function AppRuta() {
         </div>
       </header>
 
-      {respuesta && respuesta.resultados.length > 0 && (
+      {cargando && (
+        <section className={estilos.resultados} aria-label="Buscando" aria-busy="true">
+          <div className={`${estilos.tarjeta} ${estilos.esqueleto}`} />
+          <div className={`${estilos.tarjeta} ${estilos.esqueleto}`} />
+        </section>
+      )}
+      {!cargando && respuesta && respuesta.resultados.length > 0 && (
         <section className={estilos.resultados} aria-label="Resultados">
           {respuesta.resultados.map((p, i) => (
             <article key={p.sku} className={`${estilos.tarjeta} ${foco.resultado === i ? estilos.sel : ""}`}>
@@ -229,6 +235,9 @@ export function AppRuta() {
       </section>
 
       <footer className={estilos.panel}>
+        {!respuesta && !cargando && !aviso && (
+          <p className={estilos.vacio}>Escribe lo que buscas o toca un ejemplo. Te marco el camino desde la entrada.</p>
+        )}
         {aviso && (
           <div className={estilos.aviso} role="status">
             {aviso}
@@ -290,6 +299,6 @@ export function AppRuta() {
           </form>
         </div>
       )}
-    </div>
+    </main>
   );
 }
