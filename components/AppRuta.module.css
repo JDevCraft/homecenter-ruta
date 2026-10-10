@@ -345,3 +345,88 @@
   line-height: 1.3;
   color: var(--suave);
 }
+
+/* Pulido de interacción: curvas fuertes, respuesta al toque y entrada de la ventana (solo transform/opacity y color) */
+.app,
+.fondo {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+.caja button,
+.ejemplos button,
+.producto,
+.alternativas button,
+.chips button,
+.verTodo,
+.controles button,
+.dialogo button {
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+.caja button:active:not(:disabled),
+.ejemplos button:active,
+.producto:active,
+.alternativas button:active,
+.chips button:active,
+.verTodo:active,
+.controles button:active:not(:disabled),
+.dialogo button:active {
+  transform: scale(0.97);
+}
+.tarjeta {
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.fondo {
+  opacity: 1;
+  transition: opacity 180ms ease-out;
+  @starting-style {
+    opacity: 0;
+  }
+}
+.dialogo {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    transform 220ms var(--ease-out),
+    opacity 180ms ease-out;
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+.dialogo input:focus-visible,
+.caja input:focus-visible {
+  outline: 3px solid var(--amarillo);
+  outline-offset: 2px;
+}
+.caja button:focus-visible,
+.ejemplos button:focus-visible,
+.producto:focus-visible,
+.alternativas button:focus-visible,
+.chips button:focus-visible,
+.verTodo:focus-visible,
+.controles button:focus-visible,
+.dialogo button:focus-visible {
+  outline: 3px solid var(--navy);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fondo,
+  .dialogo {
+    transition: none;
+  }
+  .caja button:active:not(:disabled),
+  .ejemplos button:active,
+  .producto:active,
+  .alternativas button:active,
+  .chips button:active,
+  .verTodo:active,
+  .controles button:active:not(:disabled),
+  .dialogo button:active {
+    transform: none;
+  }
+}
