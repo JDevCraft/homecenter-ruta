@@ -94,6 +94,15 @@ def regiones(grupos, grupos_pasillo):
             lo = c[0] - 14 if k == 0 else (caja(grupos[filas[k - 1]])[2] + c[0]) / 2
             hi = c[2] + 14 if k == len(filas) - 1 else (c[2] + caja(grupos[filas[k + 1]])[0]) / 2
             out[i] = (lo, marco["y0"], hi, ancho)
+    # bloque c (columna derecha, pasillos en horizontal apilados): cada zona toma el tramo entre sus vecinas, a la mitad del hueco,
+    # y deja una separación de 3 pt con cada una para que se vean como bloques distintos (Ferretería / Herramientas / Autos...)
+    cs = sorted((i for i, g in enumerate(grupos) if g["bloque"] == "c"), key=lambda i: caja(grupos[i])[0])
+    SEP = 3
+    for k, i in enumerate(cs):
+        c = caja(grupos[i])
+        lo = c[0] - 14 if k == 0 else (caja(grupos[cs[k - 1]])[2] + c[0]) / 2 + SEP
+        hi = c[2] + 14 if k == len(cs) - 1 else (c[2] + caja(grupos[cs[k + 1]])[0]) / 2 - SEP
+        out[i] = (lo, c[1] - 8, hi, c[3] + 8)
     return out
 
 
