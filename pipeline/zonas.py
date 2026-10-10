@@ -43,9 +43,8 @@ def _solape(a, b):
     return w * h if w > 0 and h > 0 else 0.0
 
 
-def zonas(grupos_pasillo, cajas_etiquetas, y0, fx1):
-    """lista de rótulos: nombre, centro en pantalla, tamaño de letra y si va en vertical.
-    grupos_pasillo: pasillo -> [(bbox_plano, id)]; cajas_etiquetas: cajas del plano de las etiquetas ya dibujadas."""
+def agrupar(grupos_pasillo):
+    """zonas = pasillos vecinos (mismo bloque a/b/c, números seguidos) con el mismo nombre de familia"""
     zp = zona_por_pasillo()
     por_bloque = collections.defaultdict(list)
     for pid in zp:
@@ -56,6 +55,40 @@ def zonas(grupos_pasillo, cajas_etiquetas, y0, fx1):
         for pid in ids:
             if grupos and grupos[-1]["nombre"] == zp[pid] and grupos[-1]["bloque"] == pid[-1]: grupos[-1]["ids"].append(pid)
             else: grupos.append(dict(nombre=zp[pid], bloque=pid[-1], ids=[pid]))
+    return grupos
+
+
+def _oscuro(hexcolor, k=0.45, hacia=(4, 30, 126)):
+    """mezcla el color de la categoría con el azul oscuro de la marca: borde legible sin gritar"""
+    c = [int(hexcolor[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#%02X%02X%02X" % tuple(round(a * (1 - k) + b * k) for a, b in zip(c, hacia))
+
+
+def _trazo(poly):
+    def anillo(pts): return "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in pts) + " Z"
+    return " ".join([anillo(poly.exterior.coords)] + [anillo(i.coords) for i in poly.interiors])
+
+
+def svg_bordes(grupos_pasillo):
+    """contorno de cada zona (como los bloques del diagrama oficial): une las góndolas del grupo y cierra los huecos entre ellas"""
+    from shapely.geometry import box
+    from shapely.ops import unary_union
+    cat = json.load(open(os.path.join(RAIZ, "salidas", "categoria_por_pasillo.json"), encoding="utf-8"))
+    out = ['<g id="zonas-borde" pointer-events="none" fill="none" stroke-linejoin="round">']
+    for g in agrupar(grupos_pasillo):
+        cajas = [box(*b) for pid in g["ids"] for b, _ in grupos_pasillo[pid]]
+        u = unary_union(cajas).buffer(24, join_style=2).buffer(-10, join_style=2)
+        color = _oscuro(cat.get(g["ids"][0], {}).get("color", "#9E9E9E"))
+        for poly in (u.geoms if hasattr(u, "geoms") else [u]):
+            out.append(f'<path d="{_trazo(poly)}" stroke="{color}" stroke-opacity=".8" stroke-width="5" fill-rule="evenodd"/>')
+    out.append("</g>")
+    return "".join(out)
+
+
+def zonas(grupos_pasillo, cajas_etiquetas, y0, fx1):
+    """lista de rótulos: nombre, centro en pantalla, tamaño de letra y si va en vertical.
+    grupos_pasillo: pasillo -> [(bbox_plano, id)]; cajas_etiquetas: cajas del plano de las etiquetas ya dibujadas."""
+    grupos = agrupar(grupos_pasillo)
     pills = [_rects_pantalla(b, y0, fx1) for b in cajas_etiquetas]
     ocupados, salida = [], []
     # primero las zonas más grandes: eligen sitio antes que las pequeñas
@@ -113,4 +146,9 @@ def insertar(svg_lineas, grupos_pasillo, y0, fx1):
     cajas = [tuple(float(v) for v in m.split()) for m in re.findall(r'data-b="([^"]+)"', txt[ini:])]
     if "capa" not in _CACHE: _CACHE["capa"] = svg_zonas(zonas(grupos_pasillo, cajas, y0, fx1), y0, fx1)  # los rótulos no cambian con la ruta
     capa = _CACHE["capa"]
+    if "bordes" not in _CACHE: _CACHE["bordes"] = svg_bordes(grupos_pasillo)
+    ini2 = txt.find('<g id="modulos">')
+    if ini2 >= 0 and ini2 < ini:
+        txt = txt[:ini2] + _CACHE["bordes"] + chr(10) + txt[ini2:]
+        ini = txt.find('<g id="etiquetas">')
     return (txt[:ini] + capa + "\n" + txt[ini:]).split("\n")

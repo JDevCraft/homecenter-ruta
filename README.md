@@ -57,7 +57,7 @@ Si se cambian, hay que regenerar datos y revisar la paridad.
 
 ## Nombres de zona en el mapa
 
-El mapa rotula las zonas como el diagrama oficial de la tienda (Aseo, Iluminación, Pinturas, Pisos & Paredes, Herramientas, Ferretería…). `pipeline/zonas.py` toma la familia predominante de cada pasillo (mínimo 30 SKU), agrupa pasillos vecinos con el mismo nombre y coloca el rótulo donde menos estorba a las etiquetas. Para cambiar un nombre, se edita el diccionario `NOMBRE` de ese archivo y se corre `npm run datos`.
+El mapa rotula y delimita las zonas como el diagrama oficial de la tienda (Aseo, Iluminación, Pinturas, Pisos & Paredes, Herramientas, Ferretería…). `pipeline/zonas.py` toma la familia predominante de cada pasillo (mínimo 30 SKU), agrupa pasillos vecinos con el mismo nombre dibuja el contorno de cada zona (color de su categoría, algo más oscuro) y coloca el rótulo donde menos estorba a las etiquetas. Para cambiar un nombre, se edita el diccionario `NOMBRE` de ese archivo y se corre `npm run datos`.
 
 ## Supuestos sin validar en tienda
 
