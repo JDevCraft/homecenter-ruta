@@ -16,7 +16,7 @@ MODULO, NEUTRO = "#E6ECF5", "#E3EBF5"
 FONT = "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
 PAD, HEADER = 40, 120
 ENT_X, ENT_Y = 128, 556  # esquina izquierda de la etiqueta de entrada (a la derecha de P. EXH, sobre los postes)
-MAP_W, MAP_H = F["x1"] - F["x0"], F["y1"] - F["y0"]
+MAP_H = F["y1"] - F["y0"]
 FX1 = 1790                       # el plano se muestra solo hasta aquí (lo último con góndolas llega a x=1744): sin la parte de atrás
 SW, SH = MAP_H, FX1 - F["x0"]            # ancho y alto del mapa YA girado (pantalla)
 W = SW + 2 * PAD
@@ -33,8 +33,6 @@ def fusionado(m):
     return b
 
 MUEBLES = [m for m in T["muebles"] if m["tipo"] in ("mueble", "hito", "continuacion", "sin_clasificar")]
-HITO_NOMBRE = {"zona-cajas": "Puntos de pago", "rampas": "Rampas eléctricas", "p-exh": "P. EXH",
-               "plataforma": "Plataforma", "maquina-pinturas": "Pinturas"}
 
 # ---------- instrucciones ----------
 def dist_pt_rect(p, b):
@@ -311,21 +309,7 @@ def familias_velo(velos, op, destino_id):
         out.append(rect(b, color, 7, f' fill-opacity="{op}"', ident=f"v-{mid}"))
     return "".join(out)
 
-def leyenda_categorias(desplazar=False):
-    """leyenda de categorías en la esquina superior derecha del mapa girado (zona libre de góndolas)"""
-    op, cats, _ = _cargar_familias()
-    h = 56 + 38 * len(cats) + 14; x0, y0 = SW - 292, 16
-    o = [f'<g id="leyenda-categorias"' + (f' transform="translate({PAD},{HEADER + PAD})"' if desplazar else "") + '>',
-         f'<rect x="{x0}" y="{y0}" width="280" height="{h}" rx="16" fill="#fff" fill-opacity=".94" stroke="#C9D6E8" stroke-width="3"/>',
-         f'<text x="{x0 + 18}" y="{y0 + 36}" font-size="22" font-weight="700" fill="{NAVY}">Categorías</text>']
-    for i, (nombre, color) in enumerate(cats):
-        y = y0 + 56 + 38 * i
-        o.append(f'<rect x="{x0 + 18}" y="{y}" width="30" height="26" rx="7" fill="{color}" fill-opacity=".55" stroke="{color}" stroke-width="2"/>')
-        o.append(f'<text x="{x0 + 60}" y="{y + 20}" font-size="17" fill="{TEXTO}">{escape(nombre)}</text>')
-    o.append("</g>")
-    return "".join(o)
-
-def mapa_base(destino_id=None, ruta=None, hito_entrada="Entrada / Salida", transform=True, familias=True):
+def mapa_base(destino_id=None, ruta=None, transform=True, familias=True):
     g = [f'<g id="mapa" transform="translate({PAD},{HEADER + PAD}) {ROTM}">' if transform else f'<g id="mapa" transform="{ROTM}">']
     g.append(f'<rect x="{F["x0"]}" y="{F["y0"]}" width="{FX1 - F["x0"]}" height="{MAP_H}" rx="26" fill="{PISO}" stroke="#C9D6E8" stroke-width="4"/>')
     g.append(f'<g id="zonas">{zonas_svg()}</g>')
@@ -474,21 +458,6 @@ def _largo_hasta(pts, p):
         if d <= mejor + 1e-6: mejor, mejor_len = d, acum + t * l
         acum += l
     return mejor_len
-
-def fin_por_giros(pts, max_tramos=4):
-    """tramos de una ruta sin texto: vértices con giro >= 30° (máximo 4 tramos); devuelve la longitud acumulada donde termina cada tramo + la llegada"""
-    pts = [tuple(p) for p in pts]; lim = []
-    for i, p in enumerate(pts):
-        if 0 < i < len(pts) - 1 and abs(giro(lim[-1], p, pts[i + 1])) < 30: continue
-        lim.append(p)
-    lim = simplificar(lim, max_tramos)
-    total = sum(math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(pts, pts[1:]))
-    fin, prev = [], 0.0
-    for p in lim[1:]:
-        v = max(prev, _largo_hasta(pts, p)); fin.append(round(v, 1)); prev = v
-    if not fin: fin = [round(total, 1)]
-    fin[-1] = round(total, 1)
-    return fin + [round(total, 1)]
 
 def datos_destino(r, visible):
     """lo que la página necesita de una ruta: puntos, góndola destino, pasos, dónde termina cada paso y ventana de recorte"""

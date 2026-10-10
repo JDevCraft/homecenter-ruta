@@ -3,7 +3,7 @@ import { Camara, type Vista } from "./camara";
 import { Polilinea, suave } from "./geometria";
 import { ZOOM_OUT, crearLineaDeTiempo, type LineaDeTiempo } from "./linea-de-tiempo";
 
-export interface ElementosRuta {
+interface ElementosRuta {
   base: SVGPathElement;
   linea: SVGPathElement;
   tramo: SVGPathElement;

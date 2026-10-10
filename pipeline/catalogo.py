@@ -94,7 +94,7 @@ if __name__ == "__main__":
     if len(cods) > 1: print("AVISO: CODTIENDA tiene más de un valor; no se filtra:", cods)
     productos = construir(filas)
     json.dump(productos, open(CAT_JSON, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
-    fp, sp = reporte_sin_mapa(filas, productos)
+    fp, _ = reporte_sin_mapa(filas, productos)
     con = sum(1 for p in productos if any(u["id_plano"] for u in p["ubic"]))
     prim = sum(1 for p in productos if p["ubic"][0]["id_plano"])
     multi = sum(1 for p in productos if len(p["ubic"]) > 1)

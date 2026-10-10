@@ -108,7 +108,6 @@ class Indice:
         return sum(1 for x in ts if x > 0), sum(ts) + bonus
 
     def buscar(self, texto, k=5):
-        qn = normalizar(texto).strip()
         toks = tokens(texto)
         # SKU exacto
         if len(toks) == 1 and toks[0].isdigit():

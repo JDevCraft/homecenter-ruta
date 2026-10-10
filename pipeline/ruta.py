@@ -329,7 +329,7 @@ if os.environ.get("RUTA_EXPORTAR"):
 if os.environ.get("RUTA_PARES"):
     rd = json.load(open(f"{OUT}/rutas_destinos.json", encoding="utf-8"))
     celda_de = {v: anc[tuple(r["cara"].split(":"))] for v, r in rd.items()}
-    B = blk.tolist(); pares = {}; cruzan = []; t_ini = 0
+    B = blk.tolist(); pares = {}; cruzan = []
     def dijkstra(src):
         dist = {src: 0.0}; padre = {}; pq = [(0.0, src)]
         while pq:

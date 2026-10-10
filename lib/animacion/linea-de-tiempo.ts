@@ -1,12 +1,12 @@
 /** Línea de tiempo de la animación: dibujo a velocidad constante, pausa en cada giro y zoom out final. */
 
-export const PAUSA = 0.3; // s en cada giro
+const PAUSA = 0.3; // s en cada giro
 export const ZOOM_OUT = 0.8; // s del zoom out final
 const V_MIN = 1.9;
 const V_MAX = 2.8;
 const VEL = 700; // pt/s; el dibujo dura entre 1,9 y 2,8 s y con las pausas el total queda entre 2,5 y 4 s
 
-export interface Segmento {
+interface Segmento {
   /** tramo (instrucción) que se dibuja en este segmento */
   i: number;
   t0: number;

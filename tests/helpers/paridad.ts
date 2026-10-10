@@ -2,7 +2,7 @@ import type { Punto } from "@/lib/tipos";
 import { calcularRuta, cruzaObstaculos } from "@/lib/ruta";
 import fixtures from "../fixtures/rutas_python.json";
 
-export interface RefPython {
+interface RefPython {
   cara: string;
   mueble: string;
   alterna: boolean;
