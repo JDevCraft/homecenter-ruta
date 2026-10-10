@@ -55,6 +55,10 @@ Si se cambian, hay que regenerar datos y revisar la paridad.
 `lib/config.ts` tiene dos interruptores de la interfaz: `MOSTRAR_INDICACIONES` (tarjeta «Paso N de M») y `MOSTRAR_CONTROLES`
 (Paso anterior / Repetir ruta / Paso siguiente). Hoy están en `false`, como pidió Juan; poner `true` los activa.
 
+## Nombres de zona en el mapa
+
+El mapa rotula las zonas como el diagrama oficial de la tienda (Aseo, Iluminación, Pinturas, Pisos & Paredes, Herramientas, Ferretería…). `pipeline/zonas.py` toma la familia predominante de cada pasillo (mínimo 30 SKU), agrupa pasillos vecinos con el mismo nombre y coloca el rótulo donde menos estorba a las etiquetas. Para cambiar un nombre, se edita el diccionario `NOMBRE` de ese archivo y se corre `npm run datos`.
+
 ## Supuestos sin validar en tienda
 
 - Los **3 cruces de la columna derecha** (y≈557, 632, 707): huecos de 12 pt con 2 pt libres tras el margen; la ruta puede pasar por ahí.

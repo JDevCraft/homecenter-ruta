@@ -1,0 +1,116 @@
+"""Nombres de zona del mapa (como el diagrama oficial de la tienda): Aseo, Iluminación, Pinturas, Pisos & Paredes...
+Cada pasillo toma el nombre de su familia predominante; los pasillos vecinos con el mismo nombre forman una zona y el rótulo
+se coloca donde menos estorbe a las etiquetas de las góndolas. Solo dibuja texto: no cambia rutas ni búsqueda."""
+import collections, json, os, re
+from xml.sax.saxutils import escape
+
+RAIZ = os.path.dirname(os.path.abspath(__file__))
+
+# familia del catálogo -> nombre en el diagrama de la tienda
+NOMBRE = {
+    "PINTURA Y ACCESORIOS": "Pinturas", "ASEO": "Aseo", "ILUMINACION Y VENTILADORES": "Iluminación", "PISOS": "Pisos & Paredes",
+    "MENAJE": "Hogar & Menaje", "AIRE LIBRE": "Aire libre", "JARDIN": "Jardín", "DECORACION": "Decoración",
+    "ORGANIZACION": "Organización", "MUEBLES": "Muebles", "ELECTROHOGAR": "Electrohogar", "BANOS Y COCINAS": "Baños & Cocinas",
+    "PLOMERIA / GASFITERIA": "Plomería", "FERRETERIA": "Ferretería", "HERRAMIENTAS Y MAQUINARIAS": "Herramientas",
+    "ACCESORIOS AUTOMOVILES": "Autos", "CASA INTELIGENTE": "Casa inteligente", "ELECTRICIDAD": "Eléctricos",
+    "PUERTAS/VENTANAS/MOLDURAS": "Puertas & Ventanas", "TABIQUERIA/TECHUMBRE/AISLACION": "Cielo rasos",
+}
+_CACHE = {}
+MIN_SKU = 30  # un pasillo con menos SKU de la familia no rotula zona (evita nombres por 5 o 10 productos sueltos)
+
+
+def zona_por_pasillo():
+    """pasillo del plano -> nombre de zona, según la familia con más SKU entre las que tienen nombre en el diagrama"""
+    prods = json.load(open(os.path.join(RAIZ, "salidas", "catalogo.json"), encoding="utf-8"))
+    por = collections.defaultdict(lambda: collections.defaultdict(set))
+    for p in prods:
+        for u in p["ubic"]:
+            if u["id_plano"] and p["familia"] in NOMBRE: por[u["id_plano"]][p["familia"]].add(p["sku"])
+    zona = {}
+    for pas, fam in por.items():
+        f, skus = max(fam.items(), key=lambda kv: (len(kv[1]), kv[0]))
+        if len(skus) >= MIN_SKU: zona[pas] = NOMBRE[f]
+    return zona
+
+
+def _rects_pantalla(b, y0, fx1):
+    """caja del plano (x0,y0,x1,y1) -> caja en pantalla (mapa girado -90°)"""
+    return (b[1] - y0, fx1 - b[2], b[3] - y0, fx1 - b[0])
+
+
+def _solape(a, b):
+    w = min(a[2], b[2]) - max(a[0], b[0]); h = min(a[3], b[3]) - max(a[1], b[1])
+    return w * h if w > 0 and h > 0 else 0.0
+
+
+def zonas(grupos_pasillo, cajas_etiquetas, y0, fx1):
+    """lista de rótulos: nombre, centro en pantalla, tamaño de letra y si va en vertical.
+    grupos_pasillo: pasillo -> [(bbox_plano, id)]; cajas_etiquetas: cajas del plano de las etiquetas ya dibujadas."""
+    zp = zona_por_pasillo()
+    por_bloque = collections.defaultdict(list)
+    for pid in zp:
+        if pid in grupos_pasillo: por_bloque[pid[-1]].append(pid)
+    grupos = []
+    for _, ids in sorted(por_bloque.items()):
+        ids.sort(key=lambda i: (int(i[:2]), i))
+        for pid in ids:
+            if grupos and grupos[-1]["nombre"] == zp[pid] and grupos[-1]["bloque"] == pid[-1]: grupos[-1]["ids"].append(pid)
+            else: grupos.append(dict(nombre=zp[pid], bloque=pid[-1], ids=[pid]))
+    pills = [_rects_pantalla(b, y0, fx1) for b in cajas_etiquetas]
+    ocupados, salida = [], []
+    # primero las zonas más grandes: eligen sitio antes que las pequeñas
+    for g in grupos:
+        cajas = [_rects_pantalla(b, y0, fx1) for pid in g["ids"] for b, _ in grupos_pasillo[pid]]
+        B = (min(c[0] for c in cajas), min(c[1] for c in cajas), max(c[2] for c in cajas), max(c[3] for c in cajas))
+        g["caja"] = B; g["cajas"] = cajas
+    for g in sorted(grupos, key=lambda g: -((g["caja"][2] - g["caja"][0]) * (g["caja"][3] - g["caja"][1]))):
+        B, cajas, n = g["caja"], g["cajas"], len(g["nombre"])
+        mejor = None
+        for size in (30, 26, 22, 18, 16, 14):
+            largo, alto = n * size * 0.58, size * 1.1
+            for vertical in ((False, True) if (B[2] - B[0]) >= (B[3] - B[1]) else (True, False)):
+                tw, th = (alto, largo) if vertical else (largo, alto)
+                if tw > B[2] - B[0] + 2 or th > B[3] - B[1] + 2: continue
+                cx0, cy0 = (B[0] + B[2]) / 2, (B[1] + B[3]) / 2
+                paso = 6
+                cx = B[0] + tw / 2
+                while cx <= B[2] - tw / 2 + 0.01:
+                    cy = B[1] + th / 2
+                    while cy <= B[3] - th / 2 + 0.01:
+                        r = (cx - tw / 2, cy - th / 2, cx + tw / 2, cy + th / 2)
+                        # el texto debe caer sobre góndolas de la zona (no en pasillos en blanco)
+                        sobre = sum(_solape(r, c) for c in cajas) / (tw * th)
+                        pen = sum(_solape(r, p) for p in pills) * 3 + sum(_solape(r, o) for o in ocupados) * 3
+                        pen += (1 - sobre) * tw * th * 0.5 + ((cx - cx0) ** 2 + (cy - cy0) ** 2) ** 0.5 * 0.05
+                        if mejor is None or pen < mejor[0] - 1e-9: mejor = (pen, size, vertical, cx, cy, r)
+                        cy += paso
+                    cx += paso
+            if mejor and mejor[0] < 16: break  # cabe sin estorbar: se queda con la letra más grande
+        if mejor:
+            _, size, vertical, cx, cy, r = mejor
+            ocupados.append(r)
+            salida.append(dict(nombre=g["nombre"], x=cx, y=cy, size=size, vertical=vertical))
+    return salida
+
+
+def svg_zonas(rotulos, y0, fx1):
+    """<g> con los rótulos, en coordenadas del plano (el grupo del mapa ya viene girado): se contragira para leerse derecho"""
+    out = ['<g id="zonas-nombre" pointer-events="none" font-weight="800" text-anchor="middle" fill="#041E7E" fill-opacity=".62" '
+           'stroke="#fff" stroke-opacity=".85" stroke-linejoin="round" paint-order="stroke">']
+    for z in rotulos:
+        px, py = fx1 - z["y"], z["x"] + y0              # pantalla -> plano
+        giro = "" if z["vertical"] else f' transform="rotate(90 {px:.1f} {py:.1f})"'
+        out.append(f'<text x="{px:.1f}" y="{py + z["size"] * .34:.1f}" font-size="{z["size"]}" stroke-width="{z["size"] * .22:.1f}"{giro}>{escape(z["nombre"])}</text>')
+    out.append("</g>")
+    return "".join(out)
+
+
+def insertar(svg_lineas, grupos_pasillo, y0, fx1):
+    """mete el grupo de rótulos justo antes de las etiquetas (bajo ellas, sobre las góndolas y el color por familia)"""
+    txt = "\n".join(svg_lineas)
+    ini = txt.find('<g id="etiquetas">')
+    if ini < 0: return svg_lineas
+    cajas = [tuple(float(v) for v in m.split()) for m in re.findall(r'data-b="([^"]+)"', txt[ini:])]
+    if "capa" not in _CACHE: _CACHE["capa"] = svg_zonas(zonas(grupos_pasillo, cajas, y0, fx1), y0, fx1)  # los rótulos no cambian con la ruta
+    capa = _CACHE["capa"]
+    return (txt[:ini] + capa + "\n" + txt[ini:]).split("\n")

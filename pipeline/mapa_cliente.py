@@ -5,6 +5,7 @@ import json, math, os, sys
 from xml.sax.saxutils import escape
 from shapely.geometry import box
 from shapely.ops import unary_union
+import zonas as ZONAS
 
 RAIZ = os.path.dirname(os.path.abspath(__file__)); os.chdir(RAIZ)
 T = json.load(open("salidas/tienda_42.json", encoding="utf-8"))
@@ -369,6 +370,7 @@ def mapa_base(destino_id=None, ruta=None, transform=True, familias=True):
         g.append(f'<circle cx="{ORIGEN[0]}" cy="{ORIGEN[1]}" r="13" fill="{ROJO}" stroke="#fff" stroke-width="5"/>')
         g.append('</g>')
     g.append("</g>")
+    if familias: g = ZONAS.insertar(g, _grupos_pasillo(), F["y0"], FX1)  # nombres de zona (Aseo, Iluminación...) bajo las etiquetas
     return "\n".join(g)
 
 def svg(titulo, subtitulo, cuerpo, pie_h, pie, map_h=None):
