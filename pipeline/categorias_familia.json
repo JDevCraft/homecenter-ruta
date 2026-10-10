@@ -1,0 +1,10 @@
+{
+  "_nota": "Editable por Juan. Agrupación igual a la del diagrama de la tienda en la app de Homecenter: tres áreas (hogar, especialista, jardín y aire libre). Lo que no aparezca aquí cae en 'por_revisar'. Colores pastel propios (no usan el navy de la ruta, el amarillo sólido del destino ni el rojo de alertas); en el mapa se dibujan con opacidad baja.",
+  "opacidad": 0.2,
+  "categorias": [
+    {"nombre": "Jardín y aire libre", "color": "#9CCB3B", "familias": ["JARDIN", "AIRE LIBRE"]},
+    {"nombre": "Especialista", "color": "#EDC31C", "familias": ["PLOMERIA / GASFITERIA", "FERRETERIA", "HERRAMIENTAS Y MAQUINARIAS", "ACCESORIOS AUTOMOVILES", "CASA INTELIGENTE", "ELECTRICIDAD", "PUERTAS/VENTANAS/MOLDURAS", "TABIQUERIA/TECHUMBRE/AISLACION", "FIERRO/HIERRO/ACERO", "OBRA GRUESA", "MADERA Y TABLEROS"]},
+    {"nombre": "Hogar", "color": "#63B3ED", "familias": ["MUEBLES", "ORGANIZACION", "DECORACION", "ELECTROHOGAR", "BANOS Y COCINAS", "MENAJE", "PISOS", "PINTURA Y ACCESORIOS", "ASEO", "ILUMINACION Y VENTILADORES"]}
+  ],
+  "por_revisar": {"nombre": "Por revisar", "color": "#9E9E9E"}
+}

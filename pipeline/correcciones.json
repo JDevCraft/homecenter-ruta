@@ -1,0 +1,102 @@
+[
+  {
+    "accion": "agregar_obstaculo",
+    "id": "cubos-entrada",
+    "bbox": [
+      265,
+      575,
+      347,
+      610
+    ],
+    "motivo": "2 cubos blancos junto a ENTRADA // SALIDA; no se extrajeron como rect ni línea. Bbox verificado contra out/plano.png (cubos en x 266-346, y 575-610)."
+  },
+  {
+    "accion": "cierre_modulos",
+    "id": "modulos_columna_derecha",
+    "region": [
+      1240,
+      400,
+      1295,
+      1560
+    ],
+    "cierre": 0,
+    "motivo": "Columna de 29 módulos frente a 29a-39a (y 416-1499). Juan confirmó que cada cuadrado es independiente y hay hueco por donde pasa una persona; cierre 0 = cada módulo es obstáculo individual. Resto de filas/columnas conservan cierre 10 pt (CIERRE en scripts/ruta.py)."
+  },
+  {
+    "accion": "cierre_modulos",
+    "id": "modulos_fila_zona_c",
+    "region": [
+      320,
+      1140,
+      1240,
+      1210
+    ],
+    "cierre": 0,
+    "motivo": "Fila de 21 módulos (y 1162-1195, x 331-1229) sobre las góndolas 10c-21c. Cada módulo queda justo encima de la cabecera de una góndola c, así que los huecos (14-22 pt) no coinciden con los pasillos c (10-18 pt) y la ruta tenía que dar la vuelta por detrás. Decisión de Juan: la fila es el 'pasillo central' del bloque c (exhibidores bajos por los que se camina alrededor); transitable=true los quita como obstáculo. Para volver al comportamiento anterior: transitable=false (cierre 0 = módulos individuales).",
+    "transitable": true
+  },
+  {
+    "accion": "cruces_columna_derecha",
+    "id": "cruces_columna_derecha",
+    "estado": "pendiente de confirmar en tienda (Juan)",
+    "cruces": [
+      {
+        "y": 557,
+        "hueco_pt": 12.0,
+        "libre_con_margen_5_pt": 2.0,
+        "pasillos": [
+          "29a",
+          "30a"
+        ]
+      },
+      {
+        "y": 632,
+        "hueco_pt": 14.3,
+        "libre_con_margen_5_pt": 4.3,
+        "pasillos": [
+          "31a",
+          "32a"
+        ]
+      },
+      {
+        "y": 707,
+        "hueco_pt": 11.5,
+        "libre_con_margen_5_pt": 1.5,
+        "pasillos": [
+          "33a",
+          "34a",
+          "35a",
+          "36a",
+          "37a",
+          "38a",
+          "39a"
+        ]
+      }
+    ],
+    "nota": "Solo documenta los 3 pasos que la ruta usa hoy; la geometría que manda sigue siendo modulos_columna_derecha (cierre 0). Si un cruce no existe en tienda, subir el cierre de esa región o cerrar el hueco desde correcciones.json."
+  },
+  {
+    "accion": "ruta_via",
+    "id": "inicio_pasillo_central",
+    "pos": [
+      506.8,
+      1131.7
+    ],
+    "destinos": [
+      "09c",
+      "10c",
+      "11c",
+      "12c",
+      "13c",
+      "14c",
+      "15c",
+      "16c",
+      "17c",
+      "18c",
+      "19c",
+      "20c",
+      "21c"
+    ],
+    "motivo": "Instrucción de Juan: los pasillos del bloque c se alcanzan llegando al inicio del bloque (como la ruta aprobada de 14c: baja por el pasillo de 08b/07b hasta el pasillo central en x≈507) y de ahí por el pasillo central. La ruta pasa obligatoriamente por este punto; mover 'pos' si el punto de entrada real es otro (p. ej. el extremo izquierdo de 05c, x≈340)."
+  }
+]
