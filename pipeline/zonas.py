@@ -106,7 +106,7 @@ def regiones(grupos, grupos_pasillo):
     return out
 
 
-def _oscuro(hexcolor, k=0.45, hacia=(4, 30, 126)):
+def _oscuro(hexcolor, k=0.25, hacia=(4, 30, 126)):
     """mezcla el color de la categoría con el azul oscuro de la marca: borde legible sin gritar"""
     c = [int(hexcolor[i:i + 2], 16) for i in (1, 3, 5)]
     return "#%02X%02X%02X" % tuple(round(a * (1 - k) + b * k) for a, b in zip(c, hacia))
@@ -130,7 +130,7 @@ def svg_bordes(grupos_pasillo):
         u = unary_union(cajas).buffer(24, join_style=2).buffer(-10, join_style=2) if i not in reg else cajas[0]
         color = _oscuro(cat.get(g["ids"][0], {}).get("color", "#9E9E9E"))
         for poly in (u.geoms if hasattr(u, "geoms") else [u]):
-            out.append(f'<path d="{_trazo(poly)}" stroke="{color}" stroke-opacity=".8" stroke-width="5" fill-rule="evenodd"/>')
+            out.append(f'<path d="{_trazo(poly)}" stroke="{color}" stroke-opacity=".4" stroke-width="3" fill-rule="evenodd"/>')
     out.append("</g>")
     return "".join(out)
 
