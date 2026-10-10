@@ -73,6 +73,7 @@ export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version,
   const capa = useRef<SVGGElement>(null);
   const camara = useRef<Camara | null>(null);
   const animador = useRef<Animador | null>(null);
+  const verTodo = useRef(true); // sin ruta, el mapa completo se reajusta cuando cambia el tamaño del contenedor
   const aviso = useRef(alCambiarPaso);
   aviso.current = alCambiarPaso;
 
@@ -90,7 +91,7 @@ export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version,
     const c = new Camara(svg, wrap, MAPA.viewBox, sinMovimiento);
     camara.current = c;
     const quitar = c.gestos(() => animador.current?.saltar()); // tocar el mapa durante la animación la salta al final
-    const ro = new ResizeObserver(() => c.fijar(c.vista));
+    const ro = new ResizeObserver(() => c.fijar(verTodo.current ? c.completa() : c.vista));
     ro.observe(wrap);
     return () => {
       quitar();
@@ -106,6 +107,7 @@ export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version,
     const g = capa.current;
     const svg = svgRef.current;
     if (!c || !g || !svg) return;
+    verTodo.current = !ruta;
     if (!ruta) {
       c.irA(c.completa(), 0);
       return;
