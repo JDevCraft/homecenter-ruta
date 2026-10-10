@@ -367,17 +367,11 @@ def mapa_base(destino_id=None, ruta=None, transform=True, familias=True):
         if m["id"] == "zona-cajas": g.append(pill(cx, cy, "Puntos de pago", ROJO, "#fff", 26, True)); continue
         if m["id"] == "rampas": g.append(pill(cx, cy, "Rampas eléctricas", NAVY, "#fff", 24, True)); continue
         if m["id"] == "p-exh": g.append(pill(cx, b[1] + 60, "P. EXH", NAVY, "#fff", 21, True)); continue
-        if m["id"] == "maquina-pinturas": g.append(pill(cx, cy, "Pinturas", NAVY, "#fff", 21)); continue
-        if m["id"] == "plataforma": g.append(pill(cx, cy, "Plataforma", NAVY, "#fff", 24)); g.append(pill(cx - 46, cy, "12a · 13a", AZUL, "#fff", 20)); continue
+        if m["id"] in ("maquina-pinturas", "plataforma"): continue   # sin rótulo propio: el nombre de la zona ya lo dice
         if m["tipo"] == "mueble" and m["etiquetas"]:
             vert = h >= 2 * w and w < 70
             px = (max(b[0] + 60, VENTANA[0] + 40) if VENTANA else b[0] + 60) if dest and w >= 3 * h else cx  # en barras anchas el marcador de destino cae al centro: la etiqueta se corre
             g.append(pill(px, cy, m["etiquetas"][0], fil, col, 21, vert, NAVY if dest else None, gid=f"l-{m['id']}", barra=(not vert) and h < 70))
-            if m["etiquetas"][0] == "16b": g.append(pill(cx - 50, cy, "Pisos", NAVY, "#fff", 21))
-    g.append(pill(PC_X0 + 105, (PC_Y0 + PC_Y1) / 2, "Pasillo central", AZUL, "#fff", 17))
-    for h in T["hitos"]:
-        if h["id"] == "asadores": g.append(pill(h["pos"][0], h["pos"][1] - 2, "Asadores", NAVY, "#fff", 19))
-        if h["id"] == "pisos" and h["pos"][1] < 700 and h["pos"][0] < 1100: g.append(pill(h["pos"][0], h["pos"][1] + 24, "Pisos", NAVY, "#fff", 19))
     g.append("</g>")
     if ruta:
         pts = [tuple(p) for p in ruta["puntos"]]; d = "M" + " L".join(f"{x:.1f},{y:.1f}" for x, y in pts)
