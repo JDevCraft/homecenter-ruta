@@ -49,3 +49,6 @@ __pycache__/
 *.pyc
 .venv/
 out-e2e/
+
+.vercel
+.env*
