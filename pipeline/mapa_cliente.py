@@ -33,6 +33,24 @@ def fusionado(m):
         b = [min(b[0], c["bbox"][0]), min(b[1], c["bbox"][1]), max(b[2], c["bbox"][2]), max(b[3], c["bbox"][3])]
     return b
 
+def _partes_del_fondo():
+    """Algunos pasillos de la fila izquierda (02a–04a, 06a, 16a–19a) llegan hasta el fondo, pero el plano trae esa parte como una
+    góndola aparte sin etiqueta. Se une al pasillo de enfrente (mismo ancho, pegada por el fondo) para que tenga su mismo color de familia
+    y se resalte entera al ser destino. Es solo visual: las rutas y los obstáculos no cambian."""
+    frente = [m for m in T["muebles"] if m["tipo"] == "mueble" and m["etiquetas"] and m["etiquetas"][0].endswith("a")
+              and int(m["etiquetas"][0][:2]) < 22 and (m["bbox"][3] - m["bbox"][1]) > (m["bbox"][2] - m["bbox"][0])]
+    partes = {}
+    for sc in T["muebles"]:
+        if sc["tipo"] != "sin_clasificar" or sc["etiquetas"]: continue
+        b = sc["bbox"]; mejor = None
+        for f in frente:
+            fb = f["bbox"]
+            ov = min(b[2], fb[2]) - max(b[0], fb[0])
+            hueco = fb[1] - b[3]
+            if ov >= 0.7 * min(b[2] - b[0], fb[2] - fb[0]) and -5 <= hueco <= 80 and (mejor is None or hueco < mejor[0]): mejor = (hueco, f["id"])
+        if mejor: partes[sc["id"]] = mejor[1]
+    return partes
+
 MUEBLES = [m for m in T["muebles"] if m["tipo"] in ("mueble", "hito", "continuacion", "sin_clasificar")]
 
 # ---------- instrucciones ----------
@@ -278,6 +296,8 @@ def _cargar_familias():
     cats = [(c["nombre"], c["color"]) for c in cfg["categorias"]] + [(cfg["por_revisar"]["nombre"], cfg["por_revisar"]["color"])]
     return cfg.get("opacidad", 0.2), cats, pas
 
+PARTES = _partes_del_fondo()   # id de la góndola del fondo -> id de la góndola de enfrente
+
 def _grupos_pasillo():
     """ID visible del pasillo -> [(caja, id del mueble)] (tramos N/S y continuaciones incluidos)"""
     g = {}
@@ -287,6 +307,10 @@ def _grupos_pasillo():
         elif m["tipo"] == "continuacion" and m.get("continuacion_de"):
             pid = next((x["etiquetas"][0] for x in T["muebles"] if x["id"] == m["continuacion_de"] and x["etiquetas"]), None)
             if pid: g.setdefault(pid, []).append((m["bbox"], m["id"]))
+    frente_a_pasillo = {m["id"]: m["etiquetas"][0] for m in T["muebles"] if m["tipo"] == "mueble" and m["etiquetas"]}
+    for parte, frente in PARTES.items():
+        pid = frente_a_pasillo.get(frente)
+        if pid in g: g[pid].append((next(m for m in T["muebles"] if m["id"] == parte)["bbox"], parte))
     return g
 
 def familias_halo(destino_id=None):
@@ -307,7 +331,7 @@ def familias_velo(velos, op, destino_id):
     for mid, b, color in velos:
         if (destino_id is not None and mid == destino_id) or mid in vistos: continue
         vistos.add(mid)
-        out.append(rect(b, color, 7, f' fill-opacity="{op}"', ident=f"v-{mid}"))
+        out.append(rect(b, color, 7, f' fill-opacity="{op}"' + (f' data-parte="{PARTES[mid]}"' if mid in PARTES else ""), ident=f"v-{mid}"))
     return "".join(out)
 
 def mapa_base(destino_id=None, ruta=None, transform=True, familias=True):
@@ -323,6 +347,9 @@ def mapa_base(destino_id=None, ruta=None, transform=True, familias=True):
     for m in MUEBLES:
         b = fusionado(m); dest = destino_id is not None and m["id"] == destino_id
         if b[0] >= FX1: continue                       # bloque de la parte de atrás (fuera de lo que se muestra)
+        if m["id"] in PARTES:
+            d2 = destino_id is not None and PARTES[m["id"]] == destino_id
+            g.append(rect(b, AMARILLO if d2 else GONDOLA, 7, (f' stroke="{NAVY}" stroke-width="4"' if d2 else "") + f' data-parte="{PARTES[m["id"]]}"', ident=f"g-{m['id']}")); continue
         if m["tipo"] == "sin_clasificar": g.append(rect(b, NEUTRO, 7)); continue
         if m["id"] == "zona-cajas": g.append(rect(b, "#F6DCDC", 9, f' stroke="{ROJO}" stroke-width="3"')); continue
         g.append(rect(b, AMARILLO if dest else GONDOLA, 7, f' stroke="{NAVY}" stroke-width="4"' if dest else "", ident=f"g-{m['id']}"))

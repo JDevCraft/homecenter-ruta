@@ -17,6 +17,7 @@ const CASOS = [
   ["14c", "3090424", "zona c"],
   ["13c", "903637", "lado contrario"],
   ["fuera", "40019", "producto fuera del plano"],
+  ["17a", "08998", "pasillo con fondo"],
 ];
 const VISTAS = [
   [360, 800],

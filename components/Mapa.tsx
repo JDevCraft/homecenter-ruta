@@ -37,6 +37,8 @@ function crearResaltador(svg: SVGSVGElement, mueble: string) {
   const g = buscar("g");
   const l = buscar("l");
   const v = buscar("v");
+  // la parte del fondo del pasillo (góndola aparte en el plano) se resalta junto con la de enfrente
+  const partes = [...svg.querySelectorAll<SVGElement>(`rect[data-parte="${mueble}"]`)];
   const lr = l?.querySelector("rect") ?? null;
   const lt = l?.querySelector("text") ?? null;
   const guardado = {
@@ -49,6 +51,14 @@ function crearResaltador(svg: SVGSVGElement, mueble: string) {
     valor === null ? e.removeAttribute(nombre) : e.setAttribute(nombre, valor);
   return (on: boolean) => {
     if (on) {
+      for (const p of partes) {
+        if (p.id.startsWith("v-")) p.style.display = "none";
+        else {
+          p.setAttribute("fill", amarillo);
+          p.setAttribute("stroke", navy);
+          p.setAttribute("stroke-width", "4");
+        }
+      }
       g?.setAttribute("fill", amarillo);
       g?.setAttribute("stroke", navy);
       g?.setAttribute("stroke-width", "4");
@@ -58,6 +68,14 @@ function crearResaltador(svg: SVGSVGElement, mueble: string) {
       lt?.setAttribute("fill", navy);
       if (v) v.style.display = "none";
     } else {
+      for (const p of partes) {
+        if (p.id.startsWith("v-")) p.style.display = "";
+        else {
+          p.setAttribute("fill", "#D9E4F1");
+          p.removeAttribute("stroke");
+          p.removeAttribute("stroke-width");
+        }
+      }
       if (g && guardado.g) ["fill", "stroke", "stroke-width"].forEach((n, i) => poner(g, n, (guardado.g as (string | null)[])[i]));
       if (lr && guardado.lr) ["fill", "stroke", "stroke-width"].forEach((n, i) => poner(lr, n, (guardado.lr as (string | null)[])[i]));
       if (lt) poner(lt, "fill", guardado.lt);
