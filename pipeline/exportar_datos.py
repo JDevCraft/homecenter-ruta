@@ -71,4 +71,19 @@ for q in CONSULTAS:
     res.append(dict(q=q, tipo=r["tipo"], skus=[prods[i]["sku"] for i in r["idx"]], sugerencias=r["sugerencias"],
                     resultados=[idx.resultado(i) for i in r["idx"]]))
 guardar(os.path.join(FIX, "buscador_python.json"), res)
+# --- mapa base para React: el SVG del mapa girado (con colores de familia) como árbol [etiqueta, atributos, hijos]
+import xml.etree.ElementTree as ET
+svg_txt, (vx, vy, vw, vh) = M.svg_mapa_pagina()
+raiz = ET.fromstring(svg_txt)
+def nodo(e):
+    tag = e.tag.split("}")[-1]
+    hijos = ([e.text] if e.text and e.text.strip() else []) + [nodo(h) for h in e]
+    return [tag, {k: v for k, v in e.attrib.items() if k != "data-b"}, hijos]
+arbol = [nodo(h) for h in raiz if h.attrib.get("id") != "capa-ruta"]
+_, cats, _ = M._cargar_familias()
+guardar(os.path.join(DATA, "mapa.json"), dict(
+    viewBox=[vx, vy, vw, vh], rotm=M.ROTM, F=[M.F["x0"], M.F["y0"], M.FX1, M.F["y1"]],
+    ent=dict(x=M.ENT_X, y=M.ENT_Y), origen=M.ORIGEN,
+    colores=dict(navy=M.NAVY, azul=M.AZUL, amarillo=M.AMARILLO, rojo=M.ROJO, gondola=M.GONDOLA),
+    leyenda=[dict(nombre=n, color=c) for n, c in cats], arbol=arbol))
 print("datos:", sorted(os.listdir(DATA)), "| fixtures:", sorted(os.listdir(FIX)))

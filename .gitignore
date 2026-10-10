@@ -48,3 +48,4 @@ out/
 __pycache__/
 *.pyc
 .venv/
+out-e2e/
