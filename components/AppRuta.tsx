@@ -34,7 +34,7 @@ export function AppRuta() {
   const [actual, setActual] = useState("");
   const [errorOrigen, setErrorOrigen] = useState<string | null>(null);
   /** producto de la 2ª búsqueda (o posteriores) a la espera de saber en qué pasillo está el cliente */
-  const [pendiente, setPendiente] = useState<ProductoPublico | null>(null);
+  const [pendiente, setPendiente] = useState<(ProductoPublico & { consulta: string }) | null>(null);
   const yaHuboRuta = useRef(false);
 
   /** dibuja la ruta a un pasillo del plano; si el pasillo no está en el plano, solo avisa */
@@ -107,7 +107,7 @@ export function AppRuta() {
         const primero = datos.resultados[0];
         if (!primero) setAviso(datos.mensaje);
         else if (yaHuboRuta.current && primero.idPlano)
-          setPendiente(primero); // 2ª búsqueda en adelante: se pregunta dónde está
+          setPendiente({ ...primero, consulta: texto.trim() }); // 2ª búsqueda en adelante: se pregunta dónde está
         else mostrarPasillo(primero.idPlano, primero.pasillo, null);
       } catch (e) {
         if ((e as Error).name !== "AbortError") setAviso("No pude buscar ahora. Revisa tu conexión e intenta de nuevo.");
@@ -267,7 +267,7 @@ export function AppRuta() {
           <form className={estilos.dialogo} role="dialog" aria-modal="true" aria-labelledby="titulo-origen" onSubmit={fijarOrigen}>
             <h2 id="titulo-origen">¿Dónde estás?</h2>
             <p>
-              Dime en qué pasillo estás ahora y te llevo desde ahí hasta <b>{pendiente.descripcion}</b> (pasillo {pendiente.pasillo}).
+              Dime en qué pasillo estás ahora y te llevo desde ahí hasta «<b>{pendiente.consulta}</b>».
             </p>
             <input
               value={actual}

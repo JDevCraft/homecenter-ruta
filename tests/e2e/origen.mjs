@@ -59,7 +59,13 @@ await foto("origen_1_entrada.png");
 
 await escribir("input[type=search]", "taladro percutor");
 await dormir(1500);
-console.log("2ª búsqueda → ventana:", await dialogo(), "| ruta aún sin dibujar:", await linea());
+console.log(
+  "2ª búsqueda → ventana:",
+  await dialogo(),
+  await ev(`document.querySelector("[role=dialog] p")?.textContent`),
+  "| ruta aún sin dibujar:",
+  await linea(),
+);
 await foto("origen_2_ventana.png");
 
 await escribir("[role=dialog] input", "zzz");
