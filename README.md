@@ -66,7 +66,7 @@ Si se cambian, hay que regenerar datos y revisar la paridad.
 
 - La **cara de la góndola** se elige por cercanía a la entrada porque el catálogo no la trae; si esa cara no tiene punto de acercamiento se usa la contraria y se marca «Lado contrario».
 - **No hay metros, distancias ni tiempos** en ninguna parte de la interfaz.
-- La ruta siempre sale de la entrada. La función para calcular desde otro pasillo existe (`desde`) pero la interfaz no la usa.
+- La primera ruta sale de la entrada. Después de ella la app pregunta «¿En qué pasillo estás ahora?»: el cliente escribe su pasillo (ej. 13A) y las siguientes búsquedas salen de ahí (`calcularRuta(destino, { desde })`). El botón «Entrada» vuelve al origen normal. Prueba: `node tests/e2e/origen.mjs`.
 
 ## Desplegar en Vercel (preview)
 

@@ -283,3 +283,54 @@
     grid-area: panel;
   }
 }
+
+.origen {
+  margin-bottom: 8px;
+  display: grid;
+  gap: 4px;
+}
+.origen label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--azul);
+}
+.origen small {
+  font-size: 12px;
+  color: #5b6477;
+}
+.origen [role="alert"] {
+  font-size: 13px;
+  color: #b3261e;
+}
+.origenFila {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.origenFila input {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 16px;
+  text-transform: uppercase;
+  border: 2px solid var(--linea);
+  border-radius: 12px;
+}
+.origenFila button {
+  min-height: 44px;
+  flex: none;
+  padding: 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 12px;
+  background: var(--azul);
+  color: #fff;
+}
+.origenFila button[type="button"] {
+  background: #fff;
+  color: var(--azul);
+  border: 2px solid var(--azul);
+}

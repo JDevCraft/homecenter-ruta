@@ -4,11 +4,12 @@ import { useCallback, useRef, useState, type FormEvent } from "react";
 import type { ProductoPublico, RespuestaBuscar } from "@/app/api/buscar/route";
 import { MOSTRAR_CONTROLES, MOSTRAR_INDICACIONES } from "@/lib/config";
 import { MAPA } from "@/lib/mapa";
-import { calcularRuta } from "@/lib/ruta/calcular";
+import { calcularRuta, pasillosDelPlano } from "@/lib/ruta/calcular";
 import type { Ruta } from "@/lib/tipos";
 import { Mapa, type MapaHandle } from "./Mapa";
 import estilos from "./AppRuta.module.css";
 
+const PLANO = new Set(pasillosDelPlano());
 const EJEMPLOS = ["pintura blanco almendra", "taladro percutor", "bombillo led", "martillo bola"];
 
 interface Foco {
@@ -29,9 +30,12 @@ export function AppRuta() {
   const [version, setVersion] = useState(0);
   const [paso, setPaso] = useState({ i: -1, n: 0 });
   const [aviso, setAviso] = useState<string | null>(null);
+  const [origen, setOrigen] = useState<string | null>(null);
+  const [actual, setActual] = useState("");
+  const [errorOrigen, setErrorOrigen] = useState<string | null>(null);
 
   /** dibuja la ruta a un pasillo del plano; si el pasillo no está en el plano, solo avisa */
-  const mostrarPasillo = useCallback((idPlano: string | null, pasillo: string) => {
+  const mostrarPasillo = useCallback((idPlano: string | null, pasillo: string, origen: string | null) => {
     if (!idPlano) {
       setRuta(null);
       setPaso({ i: -1, n: 0 });
@@ -39,7 +43,7 @@ export function AppRuta() {
       return;
     }
     try {
-      const r = calcularRuta(idPlano);
+      const r = calcularRuta(idPlano, origen ? { desde: origen } : {});
       setAviso(null);
       setRuta(r);
       setVersion((v) => v + 1);
@@ -49,6 +53,24 @@ export function AppRuta() {
       setAviso("No pude calcular la ruta a ese pasillo.");
     }
   }, []);
+
+  /** el cliente dice en qué pasillo está: la próxima ruta sale de ahí y no de la entrada */
+  const fijarOrigen = (e: FormEvent) => {
+    e.preventDefault();
+    const id = actual.trim().toLowerCase();
+    if (!id) return;
+    if (!PLANO.has(id)) {
+      setErrorOrigen(`No encuentro el pasillo «${actual.trim()}» en el plano. Prueba con uno como 13A.`);
+      return;
+    }
+    setErrorOrigen(null);
+    setOrigen(id);
+    setActual("");
+  };
+  const volverEntrada = () => {
+    setOrigen(null);
+    setErrorOrigen(null);
+  };
 
   const buscar = useCallback(
     async (texto: string) => {
@@ -70,7 +92,7 @@ export function AppRuta() {
         const datos = (await res.json()) as RespuestaBuscar;
         setRespuesta(datos);
         setFoco({ resultado: 0, alternativa: null });
-        if (datos.resultados.length > 0) mostrarPasillo(datos.resultados[0].idPlano, datos.resultados[0].pasillo);
+        if (datos.resultados.length > 0) mostrarPasillo(datos.resultados[0].idPlano, datos.resultados[0].pasillo, origen);
         else setAviso(datos.mensaje);
       } catch (e) {
         if ((e as Error).name !== "AbortError") setAviso("No pude buscar ahora. Revisa tu conexión e intenta de nuevo.");
@@ -78,7 +100,7 @@ export function AppRuta() {
         if (peticion.current === control) setCargando(false);
       }
     },
-    [mostrarPasillo],
+    [mostrarPasillo, origen],
   );
 
   const enviar = (e: FormEvent) => {
@@ -91,11 +113,11 @@ export function AppRuta() {
   };
   const elegir = (n: number, p: ProductoPublico) => {
     setFoco({ resultado: n, alternativa: null });
-    mostrarPasillo(p.idPlano, p.pasillo);
+    mostrarPasillo(p.idPlano, p.pasillo, origen);
   };
   const elegirAlternativa = (n: number, a: number, p: ProductoPublico) => {
     setFoco({ resultado: n, alternativa: a });
-    mostrarPasillo(p.alternativas[a].idPlano, p.alternativas[a].pasillo);
+    mostrarPasillo(p.alternativas[a].idPlano, p.alternativas[a].pasillo, origen);
   };
 
   const n = paso.n;
@@ -183,12 +205,7 @@ export function AppRuta() {
       )}
 
       <section className={estilos.mapa}>
-        <Mapa
-          ref={mapa}
-          ruta={ruta}
-          version={version}
-          alCambiarPaso={(i, total) => setPaso({ i, n: total })}
-        />
+        <Mapa ref={mapa} ruta={ruta} version={version} desdeEntrada={!origen} alCambiarPaso={(i, total) => setPaso({ i, n: total })} />
         {ruta && (
           <button type="button" className={estilos.verTodo} onClick={() => mapa.current?.verRuta()}>
             Ver ruta completa
@@ -201,6 +218,32 @@ export function AppRuta() {
           <div className={estilos.aviso} role="status">
             {aviso}
           </div>
+        )}
+        {(ruta || origen) && (
+          <form className={estilos.origen} onSubmit={fijarOrigen}>
+            <label htmlFor="pasillo-actual">
+              {origen ? `Saliendo desde el pasillo ${origen.toUpperCase()}. ¿Te moviste?` : "¿En qué pasillo estás ahora?"}
+            </label>
+            <div className={estilos.origenFila}>
+              <input
+                id="pasillo-actual"
+                value={actual}
+                onChange={(e) => setActual(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="characters"
+                placeholder="Ej.: 13A"
+                maxLength={6}
+              />
+              <button type="submit">Usar</button>
+              {origen && (
+                <button type="button" onClick={volverEntrada}>
+                  Entrada
+                </button>
+              )}
+            </div>
+            <small>La próxima búsqueda saldrá desde ese pasillo.</small>
+            {errorOrigen && <span role="alert">{errorOrigen}</span>}
+          </form>
         )}
         {MOSTRAR_INDICACIONES && ruta && paso.i >= 0 && (
           <div className={estilos.paso} aria-live="polite">

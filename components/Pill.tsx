@@ -1,5 +1,21 @@
 /** Etiqueta redondeada del mapa. Va girada +90° porque el mapa se muestra girado -90°: el texto queda derecho en pantalla. */
-export function Pill({ x, y, texto, fondo, color, tamano = 20, borde }: { x: number; y: number; texto: string; fondo: string; color: string; tamano?: number; borde?: string }) {
+export function Pill({
+  x,
+  y,
+  texto,
+  fondo,
+  color,
+  tamano = 20,
+  borde,
+}: {
+  x: number;
+  y: number;
+  texto: string;
+  fondo: string;
+  color: string;
+  tamano?: number;
+  borde?: string;
+}) {
   const w = texto.length * tamano * 0.6 + tamano * 0.9;
   const h = tamano * 1.55;
   return (

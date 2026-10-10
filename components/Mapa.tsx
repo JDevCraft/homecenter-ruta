@@ -23,6 +23,8 @@ interface Props {
   /** cambia para repetir la animación de la misma ruta */
   version: number;
   alCambiarPaso(i: number, n: number): void;
+  /** true: la ruta sale de la entrada; false: sale del pasillo donde dice estar el cliente */
+  desdeEntrada?: boolean;
 }
 
 const sinMovimiento = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -43,7 +45,8 @@ function crearResaltador(svg: SVGSVGElement, mueble: string) {
     lt: lt?.getAttribute("fill") ?? null,
     v: v?.style.display ?? "",
   };
-  const poner = (e: Element, nombre: string, valor: string | null) => (valor === null ? e.removeAttribute(nombre) : e.setAttribute(nombre, valor));
+  const poner = (e: Element, nombre: string, valor: string | null) =>
+    valor === null ? e.removeAttribute(nombre) : e.setAttribute(nombre, valor);
   return (on: boolean) => {
     if (on) {
       g?.setAttribute("fill", amarillo);
@@ -64,7 +67,7 @@ function crearResaltador(svg: SVGSVGElement, mueble: string) {
 }
 
 /** Mapa de la tienda (SVG de React) con la ruta dibujada encima y la cámara sobre el viewBox. */
-export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version, alCambiarPaso }, ref) {
+export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version, alCambiarPaso, desdeEntrada = true }, ref) {
   const contenedor = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const capa = useRef<SVGGElement>(null);
@@ -113,8 +116,12 @@ export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version,
       ...ruta.puntos,
       [gb[0], gb[1]],
       [gb[2], gb[3]],
-      [MAPA.ent.x + 66, MAPA.ent.y - 75],
-      [MAPA.ent.x + 66, MAPA.ent.y + 75],
+      ...(desdeEntrada
+        ? ([
+            [MAPA.ent.x + 66, MAPA.ent.y - 75],
+            [MAPA.ent.x + 66, MAPA.ent.y + 75],
+          ] as Punto[])
+        : []),
     ];
     const a = new Animador({
       ruta,
@@ -132,7 +139,7 @@ export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version,
       a.destruir();
       if (animador.current === a) animador.current = null;
     };
-  }, [ruta, version]);
+  }, [ruta, version, desdeEntrada]);
 
   const d = ruta ? new Polilinea(ruta.puntos).trazo() : "";
   const fin = ruta ? ruta.puntos[ruta.puntos.length - 1] : null;
@@ -146,19 +153,45 @@ export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version,
         <g ref={capa} transform={MAPA.rotm}>
           {ruta && fin && ini && (
             <g key={`${ruta.destino}-${ruta.cara}-${version}`}>
-              <path data-r="base" d={d} fill="none" stroke="#fff" strokeWidth={17} strokeLinecap="round" strokeLinejoin="round" opacity={0.92} />
+              <path
+                data-r="base"
+                d={d}
+                fill="none"
+                stroke="#fff"
+                strokeWidth={17}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={0.92}
+              />
               <path data-r="linea" d={d} fill="none" stroke={navy} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" />
-              <path data-r="tramo" d={d} fill="none" stroke={navy} strokeWidth={15} strokeLinecap="round" strokeLinejoin="round" style={{ display: "none" }} />
+              <path
+                data-r="tramo"
+                d={d}
+                fill="none"
+                stroke={navy}
+                strokeWidth={15}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ display: "none" }}
+              />
               <g data-r="destino" style={{ display: "none" }}>
                 <circle className="pulso" cx={fin[0]} cy={fin[1]} r={15} fill="none" stroke={amarillo} strokeWidth={6} />
                 <circle cx={fin[0]} cy={fin[1]} r={15} fill={amarillo} stroke={navy} strokeWidth={5} />
                 <circle cx={fin[0]} cy={fin[1]} r={5} fill={navy} />
-                {ruta.ladoContrario && <Pill x={fin[0]} y={fin[1] - 44} texto="Lado contrario" fondo="#fff" color={navy} borde={amarillo} />}
+                {ruta.ladoContrario && (
+                  <Pill x={fin[0]} y={fin[1] - 44} texto="Lado contrario" fondo="#fff" color={navy} borde={amarillo} />
+                )}
               </g>
               <circle data-r="punta" cx={ini[0]} cy={ini[1]} r={11} fill={navy} stroke="#fff" strokeWidth={4} />
               <circle cx={ini[0]} cy={ini[1]} r={17} fill={navy} stroke="#fff" strokeWidth={6} />
-              <line x1={ini[0]} y1={ini[1] - 14} x2={ini[0]} y2={MAPA.ent.y + 16} stroke={navy} strokeWidth={4} />
-              <Pill x={MAPA.ent.x + 66} y={MAPA.ent.y} texto="Estás aquí" fondo={navy} color="#fff" />
+              {desdeEntrada ? (
+                <>
+                  <line x1={ini[0]} y1={ini[1] - 14} x2={ini[0]} y2={MAPA.ent.y + 16} stroke={navy} strokeWidth={4} />
+                  <Pill x={MAPA.ent.x + 66} y={MAPA.ent.y} texto="Estás aquí" fondo={navy} color="#fff" />
+                </>
+              ) : (
+                <Pill x={ini[0]} y={ini[1] + 46} texto="Estás aquí" fondo={navy} color="#fff" />
+              )}
             </g>
           )}
         </g>
