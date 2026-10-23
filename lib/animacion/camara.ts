@@ -40,7 +40,7 @@ export class Camara {
   /** ancho de vista que deja unas ~0,62 px por pt: las etiquetas de las góndolas cercanas se leen bien en el celular */
   anchoSeguimiento(): number {
     const px = this.contenedor.getBoundingClientRect().width || 360;
-    return Math.min(900, Math.max(420, px / 0.62));
+    return Math.min(1000, Math.max(520, px / 0.5));
   }
 
   private acotar(v: Vista): Vista {

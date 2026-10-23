@@ -1,13 +1,16 @@
 import type { Punto, Ruta } from "../tipos";
 import { Camara, type Vista } from "./camara";
 import { Polilinea, suave } from "./geometria";
-import { ZOOM_OUT, crearLineaDeTiempo, type LineaDeTiempo } from "./linea-de-tiempo";
+import { INTRO_BAJAR, INTRO_VER, ZOOM_OUT, crearLineaDeTiempo, type LineaDeTiempo } from "./linea-de-tiempo";
 
 interface ElementosRuta {
   base: SVGPathElement;
   linea: SVGPathElement;
   tramo: SVGPathElement;
-  punta: SVGCircleElement;
+  /** marcador de avance: punto que recorre el camino */
+  punta: SVGGElement;
+  /** camino por delante, en puntos, que se apaga al llegar */
+  fantasma?: SVGPathElement;
   destino: SVGGElement;
 }
 
@@ -43,6 +46,9 @@ export class Animador {
   private final = false;
   private hecho = false;
   private activo = true;
+  /** el sistema pide menos movimiento: la ruta se sigue dibujando paso a paso, pero la cámara no vuela */
+  private reducido = false;
+  private readonly timers: number[] = [];
 
   constructor(private readonly o: OpcionesAnimador) {
     this.poly = new Polilinea(o.ruta.puntos);
@@ -52,7 +58,11 @@ export class Animador {
     this.finales = fin.length > 0 ? [...fin.slice(0, -1), L] : [L];
     this.lt = crearLineaDeTiempo(L, this.finales);
     this.ancho = o.camara.anchoSeguimiento();
-    this.ajuste = o.camara.ajustar(o.puntosFinales.map(([x, y]) => o.aPantalla(x, y)), 120, 520);
+    this.ajuste = o.camara.ajustar(
+      o.puntosFinales.map(([x, y]) => o.aPantalla(x, y)),
+      120,
+      520,
+    );
     for (const el of [o.elementos.linea, o.elementos.base]) {
       el.setAttribute("stroke-dasharray", `${L} ${L}`);
       el.style.strokeDashoffset = String(L);
@@ -66,13 +76,8 @@ export class Animador {
 
   iniciar(): void {
     const { camara, sinMovimiento, aPantalla } = this.o;
-    if (sinMovimiento()) {
-      this.terminar(true);
-      return;
-    }
+    this.reducido = sinMovimiento();
     const [sx, sy] = aPantalla(this.poly.puntos[0][0], this.poly.puntos[0][1]);
-    camara.fijar({ cx: sx, cy: sy, w: this.ancho });
-    this.t0 = performance.now();
     const cuadro = (ahora: number) => {
       if (!this.activo || this.hecho) return;
       const t = (ahora - this.t0) / 1000;
@@ -81,7 +86,24 @@ export class Animador {
       if (t < fin) this.raf = requestAnimationFrame(cuadro);
       else this.hecho = true;
     };
-    cuadro(this.t0);
+    // 1) vista previa: se ve toda la ruta y el destino marcado; 2) la cámara baja a la entrada; 3) la flecha recorre el camino
+    camara.fijar(this.ajuste);
+    this.o.elementos.destino.style.display = "";
+    this.o.elementos.destino.classList.add("destino-pulsa");
+    if (!this.reducido) this.esperar(INTRO_VER, () => camara.irA({ cx: sx, cy: sy, w: this.ancho }, INTRO_BAJAR * 1000));
+    this.esperar(this.reducido ? INTRO_VER : INTRO_VER + INTRO_BAJAR, () => {
+      this.t0 = performance.now();
+      cuadro(this.t0);
+    });
+  }
+
+  private esperar(segundos: number, f: () => void): void {
+    this.timers.push(window.setTimeout(f, segundos * 1000));
+  }
+
+  private cancelarEspera(): void {
+    this.timers.forEach((id) => clearTimeout(id));
+    this.timers.length = 0;
   }
 
   /** instante t de la animación (se usa en el bucle y en las pruebas) */
@@ -92,12 +114,15 @@ export class Animador {
     for (const el of [elementos.linea, elementos.base]) el.style.strokeDashoffset = String(L - s);
     if (t < this.lt.T) {
       const [x, y] = this.poly.puntoEn(s);
-      elementos.punta.setAttribute("cx", String(x));
-      elementos.punta.setAttribute("cy", String(y));
+      elementos.punta.setAttribute("transform", `translate(${x} ${y})`);
       const i = this.lt.tramoAt(t);
       if (i !== this.actual) this.marcar(i);
-      camara.fijar(this.seguir(t));
+      if (!this.reducido) camara.fijar(this.seguir(t));
     } else {
+      if (this.reducido) {
+        this.visualFinal();
+        return;
+      }
       const u = Math.min(1, (t - this.lt.T) / ZOOM_OUT);
       const a = this.seguir(this.lt.T);
       const b = this.ajuste;
@@ -130,7 +155,8 @@ export class Animador {
   private visualFinal(): void {
     if (this.final) return;
     this.final = true;
-    const { linea, base, punta, destino } = this.o.elementos;
+    const { linea, base, punta, destino, fantasma } = this.o.elementos;
+    if (fantasma) fantasma.style.display = "none";
     linea.setAttribute("stroke-dasharray", "22 16");
     linea.style.strokeDashoffset = "";
     linea.classList.add("ruta-marcha");
@@ -152,6 +178,7 @@ export class Animador {
   }
 
   private terminar(inmediato: boolean): void {
+    this.cancelarEspera();
     cancelAnimationFrame(this.raf);
     this.hecho = true;
     this.visualFinal();
@@ -205,6 +232,7 @@ export class Animador {
 
   destruir(): void {
     this.activo = false;
+    this.cancelarEspera();
     cancelAnimationFrame(this.raf);
     this.o.camara.parar();
     if (this.final) this.o.resaltar(false);

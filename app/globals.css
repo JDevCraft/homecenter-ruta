@@ -36,6 +36,21 @@ svg text {
     stroke-dashoffset: -76;
   }
 }
+.halo {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: halo 1.3s ease-out infinite;
+}
+@keyframes halo {
+  from {
+    transform: scale(0.7);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
 .pulso {
   transform-box: fill-box;
   transform-origin: center;
@@ -56,6 +71,7 @@ svg text {
 }
 @media (prefers-reduced-motion: reduce) {
   .ruta-marcha,
+  .halo,
   .destino-pulsa .pulso {
     animation: none;
   }

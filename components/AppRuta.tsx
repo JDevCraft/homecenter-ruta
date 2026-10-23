@@ -18,6 +18,14 @@ interface Foco {
   alternativa: number | null;
 }
 
+/** flecha del paso según lo que dice la instrucción */
+function iconoPaso(texto: string, llegada: boolean): string {
+  if (llegada) return "⚑";
+  if (/derecha/i.test(texto)) return "↱";
+  if (/izquierda/i.test(texto)) return "↰";
+  return "↑";
+}
+
 export function AppRuta() {
   const mapa = useRef<MapaHandle>(null);
   const campo = useRef<HTMLInputElement>(null);
@@ -29,6 +37,8 @@ export function AppRuta() {
   const [ruta, setRuta] = useState<Ruta | null>(null);
   const [version, setVersion] = useState(0);
   const [paso, setPaso] = useState({ i: -1, n: 0 });
+  /** la vista previa animada del recorrido está en marcha (se apaga al llegar, al saltarla o al moverse por pasos) */
+  const [guiando, setGuiando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [origen, setOrigen] = useState<string | null>(null);
   const [actual, setActual] = useState("");
@@ -41,6 +51,7 @@ export function AppRuta() {
   const mostrarPasillo = useCallback((idPlano: string | null, pasillo: string, origen: string | null) => {
     if (!idPlano) {
       setRuta(null);
+      setGuiando(false);
       setPaso({ i: -1, n: 0 });
       setAviso(`Este producto está en una zona fuera del plano${pasillo ? ` (pasillo ${pasillo})` : ""}.`);
       return;
@@ -52,8 +63,10 @@ export function AppRuta() {
       yaHuboRuta.current = true;
       setVersion((v) => v + 1);
       setPaso({ i: 0, n: r.tramos.length });
+      setGuiando(true);
     } catch {
       setRuta(null);
+      setGuiando(false);
       setAviso("No pude calcular la ruta a ese pasillo.");
     }
   }, []);
@@ -90,6 +103,7 @@ export function AppRuta() {
       const control = new AbortController();
       peticion.current = control;
       setRuta(null);
+      setGuiando(false);
       setPaso({ i: -1, n: 0 });
       setAviso(null);
       setOrigen(null);
@@ -135,33 +149,55 @@ export function AppRuta() {
     mostrarPasillo(p.alternativas[a].idPlano, p.alternativas[a].pasillo, origen);
   };
 
+  const irA = (i: number) => {
+    setGuiando(false);
+    mapa.current?.irPaso(i);
+  };
+  const repetir = () => {
+    setGuiando(true);
+    setVersion((v) => v + 1);
+  };
+  const alCambiarPaso = (i: number, total: number) => {
+    setPaso({ i, n: total });
+    if (i >= total - 1) setGuiando(false);
+  };
+
   const n = paso.n;
   const textoPaso = ruta && paso.i >= 0 ? ruta.instrucciones[paso.i] : "";
   const etiquetaPaso = paso.i < 0 ? "" : paso.i === n - 1 ? `Llegaste · paso ${n} de ${n}` : `Paso ${paso.i + 1} de ${n}`;
 
   return (
-    <main className={estilos.app}>
+    <main className={`${estilos.app} ${ruta ? estilos.guia : ""}`}>
       <header className={estilos.arriba}>
-        <h1>Homecenter Calle 80 · ¿Qué producto buscas?</h1>
+        <p className={estilos.marca}>
+          <b>Homecenter</b> <span>Calle 80</span>
+        </p>
+        <h1>¿Qué producto buscas?</h1>
         <form className={estilos.caja} onSubmit={enviar}>
-          <input
-            ref={campo}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            type="search"
-            enterKeyHint="search"
-            autoComplete="off"
-            autoCapitalize="none"
-            placeholder="Ej.: pintura blanco almendra"
-            aria-label="Buscar producto"
-            maxLength={80}
-          />
+          <div className={estilos.campo}>
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
+              <path d="m15.5 15.5 5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+            </svg>
+            <input
+              ref={campo}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              type="search"
+              enterKeyHint="search"
+              autoComplete="off"
+              autoCapitalize="none"
+              placeholder="Ej.: pintura blanco almendra"
+              aria-label="Buscar producto"
+              maxLength={80}
+            />
+          </div>
           <button type="submit" disabled={cargando}>
             {cargando ? "Buscando" : "Buscar"}
           </button>
         </form>
         <div className={estilos.ejemplos}>
-          Prueba:{" "}
+          <span>Prueba:</span>
           {EJEMPLOS.map((t) => (
             <button key={t} type="button" onClick={() => ejemplo(t)}>
               {t}
@@ -181,13 +217,16 @@ export function AppRuta() {
           {respuesta.resultados.map((p, i) => (
             <article key={p.sku} className={`${estilos.tarjeta} ${foco.resultado === i ? estilos.sel : ""}`}>
               <button type="button" className={estilos.producto} onClick={() => elegir(i, p)}>
-                <b>{p.descripcion}</b>
-                <small>
-                  {p.familia} · SKU {p.sku}
-                </small>
                 <span className={`${estilos.pasillo} ${p.idPlano ? "" : estilos.fuera}`}>
-                  {p.pasillo ? `Pasillo ${p.pasillo}` : "Sin pasillo"}
-                  {p.idPlano ? "" : " · fuera del plano"}
+                  <small>Pasillo</small>
+                  {p.pasillo || "—"}
+                </span>
+                <span className={estilos.texto}>
+                  <b>{p.descripcion}</b>
+                  <small>
+                    {p.familia} · SKU {p.sku}
+                    {p.idPlano ? "" : " · fuera del plano"}
+                  </small>
                 </span>
               </button>
               {p.alternativas.length > 0 && (
@@ -226,7 +265,7 @@ export function AppRuta() {
       )}
 
       <section className={estilos.mapa}>
-        <Mapa ref={mapa} ruta={ruta} version={version} desdeEntrada={!origen} alCambiarPaso={(i, total) => setPaso({ i, n: total })} />
+        <Mapa ref={mapa} ruta={ruta} version={version} desdeEntrada={!origen} alCambiarPaso={alCambiarPaso} />
         {ruta && (
           <button type="button" className={estilos.verTodo} onClick={() => mapa.current?.verRuta()}>
             Ver ruta completa
@@ -234,9 +273,16 @@ export function AppRuta() {
         )}
       </section>
 
-      <footer className={estilos.panel}>
+      <footer className={`${estilos.panel} ${ruta ? estilos.conRuta : ""}`}>
         {!respuesta && !cargando && !aviso && (
-          <p className={estilos.vacio}>Escribe lo que buscas o toca un ejemplo. Te marco el camino desde la entrada.</p>
+          <div className={estilos.vacio}>
+            <p>Te marco el camino desde la entrada hasta el pasillo de tu producto.</p>
+            <ol>
+              <li>Escribe lo que buscas</li>
+              <li>Elige el producto</li>
+              <li>Sigue la línea en el mapa</li>
+            </ol>
+          </div>
         )}
         {aviso && (
           <div className={estilos.aviso} role="status">
@@ -245,20 +291,37 @@ export function AppRuta() {
         )}
         {MOSTRAR_INDICACIONES && ruta && paso.i >= 0 && (
           <div className={estilos.paso} aria-live="polite">
-            <span>{etiquetaPaso}</span>
-            <p>{textoPaso}</p>
+            <div className={`${estilos.icono} ${paso.i === n - 1 ? estilos.llegada : ""}`} aria-hidden="true">
+              {iconoPaso(textoPaso, paso.i === n - 1)}
+            </div>
+            <div className={estilos.pasoTexto}>
+              <span>
+                {etiquetaPaso}
+                {guiando && <em>Vista previa</em>}
+              </span>
+              <p>{textoPaso}</p>
+            </div>
+            <div className={estilos.progreso} aria-hidden="true">
+              <i style={{ width: `${((paso.i + 1) / n) * 100}%` }} />
+            </div>
           </div>
         )}
         {MOSTRAR_CONTROLES && (
           <div className={estilos.controles}>
-            <button type="button" disabled={!ruta || paso.i <= 0} onClick={() => mapa.current?.irPaso(paso.i - 1)}>
-              ◀ Paso anterior
+            <button type="button" disabled={!ruta || paso.i <= 0} onClick={() => irA(paso.i - 1)}>
+              ◀ Anterior
             </button>
-            <button type="button" className={estilos.principal} disabled={!ruta} onClick={() => setVersion((v) => v + 1)}>
-              ↻ Repetir ruta
-            </button>
-            <button type="button" disabled={!ruta || paso.i >= n - 1} onClick={() => mapa.current?.irPaso(paso.i + 1)}>
-              Paso siguiente ▶
+            {guiando ? (
+              <button type="button" className={estilos.principal} onClick={() => mapa.current?.saltar()}>
+                Saltar ⏭
+              </button>
+            ) : (
+              <button type="button" className={estilos.principal} disabled={!ruta} onClick={repetir}>
+                ↻ Ver de nuevo
+              </button>
+            )}
+            <button type="button" disabled={!ruta || paso.i >= n - 1} onClick={() => irA(paso.i + 1)}>
+              Siguiente ▶
             </button>
           </div>
         )}

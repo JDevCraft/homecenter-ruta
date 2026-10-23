@@ -1,10 +1,12 @@
 /** Línea de tiempo de la animación: dibujo a velocidad constante, pausa en cada giro y zoom out final. */
 
-const PAUSA = 0.3; // s en cada giro
+const PAUSA = 0.5; // s en cada giro: breve, para que el recorrido fluya
+export const INTRO_VER = 1.1; // s mostrando la ruta completa y el destino antes de arrancar
+export const INTRO_BAJAR = 1.1; // s que tarda la cámara en bajar a la entrada
 export const ZOOM_OUT = 0.8; // s del zoom out final
-const V_MIN = 1.9;
-const V_MAX = 2.8;
-const VEL = 700; // pt/s; el dibujo dura entre 1,9 y 2,8 s y con las pausas el total queda entre 2,5 y 4 s
+const V_MIN = 6;
+const V_MAX = 14;
+const VEL = 170; // pt/s; vista previa a ritmo de caminata: el dibujo dura entre 6 y 14 s, más 0,5 s de pausa en cada giro
 
 interface Segmento {
   /** tramo (instrucción) que se dibuja en este segmento */

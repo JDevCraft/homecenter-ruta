@@ -146,7 +146,14 @@ export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version,
     const a = new Animador({
       ruta,
       camara: c,
-      elementos: { base: el("base"), linea: el("linea"), tramo: el("tramo"), punta: el("punta"), destino: el("destino") },
+      elementos: {
+        fantasma: el<SVGPathElement>("fantasma"),
+        base: el("base"),
+        linea: el("linea"),
+        tramo: el("tramo"),
+        punta: el("punta"),
+        destino: el("destino"),
+      },
       aPantalla,
       puntosFinales: finales,
       sinMovimiento,
@@ -173,6 +180,16 @@ export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version,
         <g ref={capa} transform={MAPA.rotm}>
           {ruta && fin && ini && (
             <g key={`${ruta.destino}-${ruta.cara}-${version}`}>
+              <path
+                data-r="fantasma"
+                d={d}
+                fill="none"
+                stroke="#6aa9e6"
+                strokeWidth={9}
+                strokeLinecap="round"
+                strokeDasharray="1 20"
+                opacity={0.9}
+              />
               <path
                 data-r="base"
                 d={d}
@@ -202,7 +219,10 @@ export const Mapa = forwardRef<MapaHandle, Props>(function Mapa({ ruta, version,
                   <Pill x={fin[0]} y={fin[1] - 44} texto="Lado contrario" fondo="#fff" color={navy} borde={amarillo} />
                 )}
               </g>
-              <circle data-r="punta" cx={ini[0]} cy={ini[1]} r={11} fill={navy} stroke="#fff" strokeWidth={4} />
+              <g data-r="punta" transform={`translate(${ini[0]} ${ini[1]})`}>
+                <circle className="halo" r={20} fill={navy} opacity={0.22} />
+                <circle r={9} fill={navy} stroke="#fff" strokeWidth={4} />
+              </g>
               <circle cx={ini[0]} cy={ini[1]} r={17} fill={navy} stroke="#fff" strokeWidth={6} />
               {desdeEntrada ? (
                 <>
